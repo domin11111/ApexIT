@@ -1,6 +1,10 @@
 import {
   ApiError,
   CompareResponse,
+  CreateConfigurationResponse,
+  SavedConfigurationDto,
+  ValidateConfigurationResponse,
+  type ConfigurationPayload,
   MotherboardListResponse,
   PlatformListResponse,
   ProductDetailDto,
@@ -16,6 +20,15 @@ afterAll(() => server.close());
 
 const get = async (path: string) => {
   const response = await fetch(`http://mocks.test/api/v1${path}`);
+  return { status: response.status, body: (await response.json()) as unknown };
+};
+
+const post = async (path: string, body: unknown) => {
+  const response = await fetch(`http://mocks.test/api/v1${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
   return { status: response.status, body: (await response.json()) as unknown };
 };
 
@@ -75,5 +88,55 @@ describe('MSW-моки публичного API', () => {
     const boards = MotherboardListResponse.parse((await get('/platforms/sp5/motherboards')).body);
     expect(boards.items).toHaveLength(4);
     expect((await get('/platforms/AM5/motherboards')).status).toBe(404);
+  });
+});
+
+describe('MSW-моки конфигуратора', () => {
+  const build = (over: Partial<ConfigurationPayload> = {}): ConfigurationPayload => ({
+    schemaVersion: 1,
+    socket: 'SP5',
+    motherboardId: null,
+    cpu: { slug: 'epyc-9965', count: 2 },
+    memory: null,
+    gpu: { slug: 'rtx-pro-6000-blackwell', count: 4 },
+    ...over,
+  });
+
+  it('EPYC 9996 на SP5 — несовместимо, с объяснением', async () => {
+    const { status, body } = await post('/configurations/validate', build({ cpu: { slug: 'epyc-9996-venice', count: 1 } }));
+    expect(status).toBe(200);
+    const result = ValidateConfigurationResponse.parse(body);
+    expect(result.valid).toBe(false);
+    expect(result.issues[0]).toMatchObject({ code: 'SOCKET_MISMATCH', field: 'cpu' });
+  });
+
+  it('EPYC 9965 на Supermicro H13SSL-N — не хватает 100 Вт TDP', async () => {
+    const boards = MotherboardListResponse.parse((await get('/platforms/SP5/motherboards')).body).items;
+    const h13 = boards.find((b) => b.model === 'H13SSL-N')!;
+    const result = ValidateConfigurationResponse.parse(
+      (await post('/configurations/validate?locale=en', build({ motherboardId: h13.id, cpu: { slug: 'epyc-9965', count: 1 } }))).body,
+    );
+    const issue = result.issues.find((i) => i.code === 'CPU_TDP_EXCEEDS_BOARD');
+    expect(issue?.message).toBe('Supermicro H13SSL-N supports CPUs up to 400 W, but AMD EPYC 9965 is rated at 500 W');
+  });
+
+  it('сохранение: код стабилен, сборка читается обратно', async () => {
+    const payload = build();
+    const first = await post('/configurations', payload);
+    expect(first.status).toBe(201);
+    const { shareCode } = CreateConfigurationResponse.parse(first.body);
+    expect(CreateConfigurationResponse.parse((await post('/configurations', payload)).body).shareCode).toBe(shareCode);
+
+    const saved = SavedConfigurationDto.parse((await get(`/configurations/${shareCode}`)).body);
+    expect(saved.payload).toEqual(payload);
+    expect(saved.totals).toMatchObject({ cores: 384, threads: 768, vramGb: 384 });
+  });
+
+  it('несовместимую сборку сохранить нельзя; неизвестный код — 404', async () => {
+    const invalid = await post('/configurations', build({ cpu: { slug: 'epyc-9996-venice', count: 1 } }));
+    expect(invalid.status).toBe(422);
+    expect(ApiError.parse(invalid.body).error.code).toBe('CONFIGURATION_INVALID');
+    expect((await get('/configurations/abcdefghjk')).status).toBe(404);
+    expect((await get('/configurations/not-a-code')).status).toBe(400);
   });
 });

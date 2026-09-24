@@ -204,5 +204,136 @@
       },
       "none": "No boards announced for this platform yet."
     }
+  },
+  "compare": {
+    "metaTitle": "Compare",
+    "metaDescription": "Compare flagship server components side by side: the best value in every row and 3D models on a shared podium.",
+    "eyebrow": "Compare",
+    "title": "Compare the flagships",
+    "lead": "Pick 2–3 products of one category: the models line up on a podium and the best value in each row lights up.",
+    "picker": {
+      "label": "Products to compare",
+      "selected": "{count} of 3 selected",
+      "only": "The only one in its category — nothing to compare with yet",
+      "full": "You can compare up to three products",
+      "categories": {
+        "CPU": "Processors",
+        "MEMORY": "Memory",
+        "GPU": "Graphics",
+        "MOTHERBOARD": "Boards"
+      }
+    },
+    "needTwo": "Pick at least one more product of this category.",
+    "share": "Copy link",
+    "copied": "Link copied",
+    "best": "best",
+    "viewerLabel": "3D models of the selected products side by side on a podium, rotating in sync",
+    "viewerHint": "Drag to rotate all models",
+    "open": "Product page",
+    "specs": "Specifications",
+    "groups": {
+      "compute": "Compute",
+      "cache": "Cache",
+      "memory": "Memory",
+      "performance": "Performance",
+      "power": "Power",
+      "io": "Interfaces",
+      "silicon": "Silicon",
+      "module": "Module",
+      "technology": "Technology",
+      "scale": "Scale",
+      "platform": "Platform"
+    }
+  },
+  "configurator": {
+    "metaTitle": "Configurator",
+    "metaDescription": "Build a server from the collection's flagships: platform, CPUs, memory and GPUs with compatibility checks and power estimates.",
+    "eyebrow": "Configurator",
+    "title": "Build your system",
+    "lead": "Platform, CPUs, memory and accelerators — compatibility is checked at every step and totals update instantly.",
+    "viewerLabel": "3D preview of the build: the board and installed components",
+    "viewerHint": "Drag to rotate · scroll to zoom",
+    "viewerHintTouch": "Swipe to rotate · pinch to zoom",
+    "next": "Next",
+    "steps": {
+      "platform": "Platform",
+      "cpu": "Processor",
+      "memory": "Memory",
+      "gpu": "Graphics"
+    },
+    "platform": {
+      "channels": "{count} memory channels",
+      "pcie": "PCIe {gen}.0",
+      "tdp": "up to {tdp} W per socket",
+      "board": "Motherboard",
+      "anyBoard": "Any compatible",
+      "anyBoardNote": "Checked against platform limits",
+      "boardSpec": "{sockets}P · {slots} DIMM",
+      "pending": "specs to be announced"
+    },
+    "cpu": {
+      "count": "CPUs",
+      "requires": "Requires socket {socket}",
+      "spec": "{cores} cores · {tdp} W"
+    },
+    "memory": {
+      "count": "Modules",
+      "slots": "{used} of {total} slots",
+      "balanced": "All channels · {count}",
+      "doubled": "2 per channel · {count}",
+      "none": "No memory"
+    },
+    "gpu": {
+      "count": "Cards",
+      "slots": "{used} of {total} x16 slots",
+      "none": "No GPUs"
+    },
+    "stepper": {
+      "decrease": "Fewer",
+      "increase": "More"
+    },
+    "totals": {
+      "title": "Build summary",
+      "cores": "Cores",
+      "threads": "Threads",
+      "memory": "Memory",
+      "vram": "GPU memory",
+      "power": "Power draw",
+      "psu": "Power supply from {value}",
+      "estimate": "Estimated from component TDP and TGP plus board, networking and cooling; the power supply includes 25% headroom.",
+      "breakdown": {
+        "cpu": "CPUs",
+        "memory": "Memory",
+        "gpu": "GPUs",
+        "platform": "Board and cooling"
+      }
+    },
+    "issues": {
+      "title": "Compatibility",
+      "ok": "The build is compatible",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Note"
+    },
+    "actions": {
+      "save": "Save link",
+      "saving": "Saving…",
+      "copied": "Link copied",
+      "savedAs": "Build code: {code}",
+      "request": {
+        "QUOTE": "Request a quote",
+        "INFO": "Request information"
+      },
+      "invalid": "Fix the errors to save this build",
+      "error": "Could not save — please try again"
+    },
+    "loading": "Loading the saved build…",
+    "notFound": "The shared build was not found — showing the default build.",
+    "units": {
+      "gb": "GB",
+      "tb": "TB",
+      "w": "W",
+      "kw": "kW"
+    }
   }
 }

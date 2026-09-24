@@ -1,5 +1,5 @@
 import type { CatalogRecords } from '@apex/collection';
-import type { CatalogSource } from '@apex/domain';
+import type { CatalogSource, ConfigurationRecord, ConfigurationStore } from '@apex/domain';
 
 const bySortOrder = <T extends { sortOrder: number }>(items: readonly T[], tieBreak: (item: T) => string) =>
   items.toSorted((a, b) => a.sortOrder - b.sortOrder || tieBreak(a).localeCompare(tieBreak(b)));
@@ -35,6 +35,21 @@ export function createMemorySource(records: CatalogRecords, now: () => Date = ()
         records.motherboards.filter((b) => b.platform.socket === socket),
         (b) => `${b.vendor} ${b.model}`,
       );
+    },
+  };
+}
+
+/** Сохранённые сборки в памяти: копия записи — как будто она прошла через JSON-колонку БД. */
+export function createMemoryConfigurationStore(): ConfigurationStore {
+  const saved = new Map<string, ConfigurationRecord>();
+  return {
+    async find(shareCode) {
+      return saved.get(shareCode) ?? null;
+    },
+    async insert(record) {
+      if (saved.has(record.shareCode)) return false;
+      saved.set(record.shareCode, { ...record, payload: structuredClone(record.payload), totals: structuredClone(record.totals) });
+      return true;
     },
   };
 }

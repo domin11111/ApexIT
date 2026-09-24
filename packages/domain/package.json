@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "description": "Логика каталога без привязки к фреймворку: DTO-маппинг, локализация, сравнение",
+  "description": "Логика каталога без привязки к фреймворку: DTO-маппинг, локализация, сравнение, движок конфигуратора",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./engine": "./src/configurator/engine.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

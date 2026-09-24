@@ -7,6 +7,107 @@
   },
   "components": {
     "schemas": {
+      "ConfigurationPayloadInput": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "const": 1
+          },
+          "socket": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,16}$"
+          },
+          "motherboardId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cpu": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2
+              }
+            },
+            "required": [
+              "slug",
+              "count"
+            ]
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  }
+                },
+                "required": [
+                  "slug",
+                  "count"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gpu": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  }
+                },
+                "required": [
+                  "slug",
+                  "count"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "socket",
+          "motherboardId",
+          "cpu",
+          "memory",
+          "gpu"
+        ]
+      },
       "ApiError": {
         "type": "object",
         "properties": {
@@ -966,6 +1067,348 @@
           "rows"
         ],
         "additionalProperties": false
+      },
+      "ConfigurationPayload": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "const": 1
+          },
+          "socket": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,16}$"
+          },
+          "motherboardId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cpu": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2
+              }
+            },
+            "required": [
+              "slug",
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  }
+                },
+                "required": [
+                  "slug",
+                  "count"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gpu": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 16
+                  }
+                },
+                "required": [
+                  "slug",
+                  "count"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "socket",
+          "motherboardId",
+          "cpu",
+          "memory",
+          "gpu"
+        ],
+        "additionalProperties": false
+      },
+      "ConfigurationTotals": {
+        "type": "object",
+        "properties": {
+          "cores": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "threads": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "memoryGb": {
+            "type": "number"
+          },
+          "vramGb": {
+            "type": "number"
+          },
+          "cpuPowerW": {
+            "type": "number"
+          },
+          "memoryPowerW": {
+            "type": "number"
+          },
+          "gpuPowerW": {
+            "type": "number"
+          },
+          "platformOverheadW": {
+            "type": "number"
+          },
+          "totalPowerW": {
+            "type": "number"
+          },
+          "recommendedPsuW": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "cores",
+          "threads",
+          "memoryGb",
+          "vramGb",
+          "cpuPowerW",
+          "memoryPowerW",
+          "gpuPowerW",
+          "platformOverheadW",
+          "totalPowerW",
+          "recommendedPsuW"
+        ],
+        "additionalProperties": false
+      },
+      "ConfigurationLimits": {
+        "type": "object",
+        "properties": {
+          "sockets": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "memorySlots": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "memoryChannels": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "gpuSlots": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "cpuTdpW": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memoryPerSlotGb": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "sockets",
+          "memorySlots",
+          "memoryChannels",
+          "gpuSlots",
+          "cpuTdpW",
+          "memoryPerSlotGb"
+        ],
+        "additionalProperties": false
+      },
+      "ValidationIssue": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "UNKNOWN_PRODUCT",
+              "UNKNOWN_MOTHERBOARD",
+              "SOCKET_MISMATCH",
+              "SOCKET_COUNT_EXCEEDED",
+              "SOCKETS_UNDERPOPULATED",
+              "CPU_TDP_EXCEEDS_BOARD",
+              "MEMORY_MISSING",
+              "MEMORY_SLOTS_EXCEEDED",
+              "MEMORY_CAPACITY_EXCEEDS_BOARD",
+              "MEMORY_UNBALANCED",
+              "MEMORY_NOT_VALIDATED",
+              "PCIE_SLOTS_EXCEEDED",
+              "PLATFORM_NOT_AVAILABLE",
+              "BOARD_SPECS_PENDING",
+              "PRODUCT_NOT_ORDERABLE"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "enum": [
+              "socket",
+              "motherboard",
+              "cpu",
+              "memory",
+              "gpu"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "field",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "ValidateConfigurationResponse": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "orderable": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationIssue"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ConfigurationTotals"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/ConfigurationLimits"
+          }
+        },
+        "required": [
+          "valid",
+          "orderable",
+          "issues",
+          "totals",
+          "limits"
+        ],
+        "additionalProperties": false
+      },
+      "CreateConfigurationResponse": {
+        "type": "object",
+        "properties": {
+          "shareCode": {
+            "type": "string",
+            "pattern": "^[a-hjkmnp-z2-9]{10}$"
+          }
+        },
+        "required": [
+          "shareCode"
+        ],
+        "additionalProperties": false
+      },
+      "SavedConfiguration": {
+        "type": "object",
+        "properties": {
+          "shareCode": {
+            "type": "string",
+            "pattern": "^[a-hjkmnp-z2-9]{10}$"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ConfigurationPayload"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ConfigurationTotals"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "shareCode",
+          "payload",
+          "totals",
+          "createdAt"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -1497,6 +1940,214 @@
           }
         }
       }
+    },
+    "/api/v1/configurations/validate": {
+      "post": {
+        "summary": "Проверка совместимости сборки",
+        "tags": [
+          "configurator"
+        ],
+        "description": "Правила движка: сокет CPU ↔ платформа, число сокетов, TDP против лимита платы, слоты и ёмкость памяти, баланс каналов, слоты PCIe x16. Возвращает проблемы с объяснениями, итоги (ядра, память, VRAM, ватты) и лимиты.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationPayloadInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "default": "ru",
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateConfigurationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/configurations": {
+      "post": {
+        "summary": "Сохранить сборку и получить код для ссылки",
+        "tags": [
+          "configurator"
+        ],
+        "description": "Сохраняется только совместимая сборка (иначе 422 со списком ошибок). Код детерминирован: та же сборка всегда получает ту же ссылку.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationPayloadInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateConfigurationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/configurations/{shareCode}": {
+      "get": {
+        "summary": "Сохранённая сборка по коду",
+        "tags": [
+          "configurator"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-hjkmnp-z2-9]{10}$"
+            },
+            "in": "path",
+            "name": "shareCode",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedConfiguration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -1512,6 +2163,10 @@
     {
       "name": "platforms",
       "description": "Сокеты и материнские платы"
+    },
+    {
+      "name": "configurator",
+      "description": "Движок совместимости и сохранённые сборки"
     },
     {
       "name": "system",

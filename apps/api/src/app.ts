@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createCatalogService } from '@apex/domain';
+import { createCatalogService, createConfiguratorService, type CatalogReader } from '@apex/domain';
 import cors from '@fastify/cors';
 import etag from '@fastify/etag';
 import helmet from '@fastify/helmet';
@@ -17,11 +17,13 @@ import { CatalogCache } from './cache/catalog-cache';
 import type { Redis } from './cache/redis';
 import { createCachedCatalog } from './catalog/cached-catalog';
 import { createPrismaSource } from './catalog/prisma-source';
+import { createPrismaConfigurationStore } from './configurations/prisma-store';
 import type { Env } from './config/env';
 import type { Db } from './db/prisma';
 import { registerErrorHandlers } from './http/errors';
 import { transformObject } from './http/openapi';
 import { catalogRoutes } from './routes/catalog';
+import { configurationRoutes } from './routes/configurations';
 import { healthRoutes } from './routes/health';
 
 export type AppDeps = { env: Env; prisma: Db; redis: Redis };
@@ -75,6 +77,7 @@ export async function buildApp({ env, prisma, redis }: AppDeps) {
       tags: [
         { name: 'catalog', description: 'Продукты коллекции и сравнение' },
         { name: 'platforms', description: 'Сокеты и материнские платы' },
+        { name: 'configurator', description: 'Движок совместимости и сохранённые сборки' },
         { name: 'system', description: 'Служебные эндпоинты' },
       ],
     },
@@ -94,6 +97,13 @@ export async function buildApp({ env, prisma, redis }: AppDeps) {
     createCatalogService(createPrismaSource(prisma)),
     new CatalogCache(redis, env.CACHE_TTL_SECONDS, app.log),
   );
+  // Конфигуратор читает каталог через тот же кэш: проверка сборки не ходит в БД на каждый клик
+  const cachedReader: CatalogReader = {
+    getProduct: async (slug, locale) => (await catalog.getProduct(slug, locale)).value,
+    listPlatforms: async (locale) => (await catalog.listPlatforms(locale)).value,
+    listMotherboards: async (socket, locale) => (await catalog.listMotherboards(socket, locale)).value,
+  };
+  const configurator = createConfiguratorService({ catalog: cachedReader, store: createPrismaConfigurationStore(prisma) });
 
   // Всё, кроме /docs: строгие заголовки безопасности, ETag и rate limit.
   // Swagger UI вынесен за этот контекст — ему нужен собственный CSP со скриптами.
@@ -117,6 +127,7 @@ export async function buildApp({ env, prisma, redis }: AppDeps) {
 
     await api.register(healthRoutes, { prisma, redis });
     await api.register(catalogRoutes, { prefix: '/api/v1', catalog });
+    await api.register(configurationRoutes, { prefix: '/api/v1', configurator });
   });
 
   return app;

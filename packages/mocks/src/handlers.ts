@@ -1,9 +1,17 @@
 import { buildCatalogRecords, type CatalogRecords } from '@apex/collection';
-import { CompareQuery, LocaleQuery, ProductListQuery, Slug, SocketParam } from '@apex/contracts';
-import { createCatalogService, DomainError } from '@apex/domain';
+import {
+  CompareQuery,
+  ConfigurationPayload,
+  LocaleQuery,
+  ProductListQuery,
+  ShareCode,
+  Slug,
+  SocketParam,
+} from '@apex/contracts';
+import { createCatalogService, createConfiguratorService, DomainError } from '@apex/domain';
 import { delay, http, HttpResponse, type JsonBodyType } from 'msw';
 import { ZodError } from 'zod';
-import { createMemorySource } from './memory-source';
+import { createMemoryConfigurationStore, createMemorySource } from './memory-source';
 
 export type MockOptions = {
   records?: CatalogRecords;
@@ -18,11 +26,13 @@ export type MockOptions = {
  */
 export function createHandlers({ records = buildCatalogRecords(), latencyMs = 0 }: MockOptions = {}) {
   const catalog = createCatalogService(createMemorySource(records));
+  // Сохранённые сборки живут, пока открыта вкладка (или процесс теста)
+  const configurator = createConfiguratorService({ catalog, store: createMemoryConfigurationStore() });
 
-  const respond = async <T extends JsonBodyType>(run: () => T | Promise<T>) => {
+  const respond = async <T extends JsonBodyType>(run: () => T | Promise<T>, status = 200) => {
     if (latencyMs > 0) await delay(latencyMs);
     try {
-      return HttpResponse.json(await run());
+      return HttpResponse.json(await run(), { status });
     } catch (error) {
       if (error instanceof DomainError) {
         return HttpResponse.json(error.toApiError(), { status: error.status });
@@ -66,6 +76,22 @@ export function createHandlers({ records = buildCatalogRecords(), latencyMs = 0 
       respond(() =>
         catalog.listMotherboards(SocketParam.parse(params.socket), LocaleQuery.parse(searchParams(request)).locale),
       ),
+    ),
+
+    http.post('*/api/v1/configurations/validate', async ({ request }) => {
+      const body: unknown = await request.json();
+      return respond(() =>
+        configurator.validate(ConfigurationPayload.parse(body), LocaleQuery.parse(searchParams(request)).locale),
+      );
+    }),
+
+    http.post('*/api/v1/configurations', async ({ request }) => {
+      const body: unknown = await request.json();
+      return respond(() => configurator.save(ConfigurationPayload.parse(body)), 201);
+    }),
+
+    http.get('*/api/v1/configurations/:shareCode', ({ params }) =>
+      respond(() => configurator.load(ShareCode.parse(params.shareCode))),
     ),
   ];
 }
