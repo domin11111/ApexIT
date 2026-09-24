@@ -94,5 +94,115 @@
       "disclaimer": "AMD, EPYC, Micron, NVIDIA, RTX and Blackwell are trademarks of their respective owners. Specifications of unannounced and preview products are preliminary and subject to change.",
       "rights": "© 2026 APEX // Compute Collection"
     }
+  },
+  "product": {
+    "breadcrumb": "Collection",
+    "viewer": {
+      "label": "Interactive 3D model: drag to rotate, scroll to zoom",
+      "explode": "Explode",
+      "assemble": "Assemble",
+      "lighting": "Lighting",
+      "lightingStudio": "Studio",
+      "lightingServerRoom": "Server room",
+      "lightingNeon": "Neon",
+      "reset": "Overview",
+      "hotspots": "Model details",
+      "close": "Close",
+      "hint": "Drag to rotate · scroll to zoom",
+      "hintTouch": "Swipe to rotate · pinch to zoom"
+    },
+    "cta": {
+      "QUOTE": "Request a quote",
+      "INFO": "Request information",
+      "compare": "Compare",
+      "previewNote": "This product is in preview — it can’t be ordered yet, but you can get information and a launch notification."
+    },
+    "specs": {
+      "title": "Specifications",
+      "eyebrow": "All figures from manufacturer specifications"
+    },
+    "scenarios": {
+      "title": "Built for",
+      "CPU": {
+        "ai": {
+          "title": "AI inference and training",
+          "body": "{cores} cores and {l3} of L3 cache serve thousands of parallel model requests and keep GPUs fed without stalls."
+        },
+        "virtualization": {
+          "title": "Virtualization and cloud",
+          "body": "More VMs per socket, fewer servers per rack. {threads} threads per processor in a 1P configuration."
+        },
+        "hpc": {
+          "title": "HPC and simulation",
+          "body": "CFD, weather, genomics: core density plus {bandwidth} of memory bandwidth."
+        },
+        "databases": {
+          "title": "Databases and analytics",
+          "body": "A huge L3 cache and {channels} memory channels accelerate OLTP and analytics on hot data."
+        }
+      },
+      "MEMORY": {
+        "ai": {
+          "title": "Large language models",
+          "body": "{capacity} on one module: weights and KV cache of large models stay entirely in server memory."
+        },
+        "virtualization": {
+          "title": "VM consolidation",
+          "body": "Up to {system} of memory in a dual-socket server — more machines per node, no swapping."
+        },
+        "hpc": {
+          "title": "In-memory HPC",
+          "body": "Speeds up to {speed}: compute on huge arrays without touching storage."
+        },
+        "databases": {
+          "title": "In-memory databases",
+          "body": "SAP HANA, Redis, Spark analytics: the module draws just {power} — saving {saving} versus four 128 GB modules."
+        }
+      },
+      "GPU": {
+        "ai": {
+          "title": "Generative AI",
+          "body": "{vram} of memory and fifth-gen Tensor Cores with FP4: fine-tune and serve large models on one card."
+        },
+        "virtualization": {
+          "title": "Virtual workstations",
+          "body": "Multi-Instance GPU splits the card into isolated instances — graphics and AI for several users."
+        },
+        "hpc": {
+          "title": "Simulation and rendering",
+          "body": "{cuda} CUDA cores and fourth-gen RT Cores: physically based rendering and engineering compute."
+        },
+        "databases": {
+          "title": "Accelerated analytics",
+          "body": "{bandwidth} of bandwidth: GPU-accelerated SQL and data processing in card memory."
+        }
+      }
+    },
+    "compatibility": {
+      "title": "Compatibility",
+      "platforms": "Platforms",
+      "levels": {
+        "SUPPORTED": "Supported",
+        "VALIDATING": "Validation in progress"
+      },
+      "boards": "Motherboards",
+      "components": "Compatible collection components",
+      "columns": {
+        "board": "Board",
+        "formFactor": "Form factor",
+        "sockets": "Sockets",
+        "dimms": "DIMM slots",
+        "tdp": "CPU TDP",
+        "fit": "For this product"
+      },
+      "fit": {
+        "ok": "Fits",
+        "tdp": "Doesn’t fit: board supports CPUs up to {max} W",
+        "capacity": "Doesn’t fit: up to {max} GB per slot",
+        "pending": "Specifications pending",
+        "unknown": "Check with the vendor"
+      },
+      "none": "No boards announced for this platform yet."
+    }
   }
 }

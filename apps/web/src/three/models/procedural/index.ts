@@ -26,7 +26,11 @@ export function markingFor(preset: ModelPreset, identity?: ModelIdentity): Label
       ];
     }
     case 'GPU_DUAL_SLOT':
-      return [{ text: `${brand.toUpperCase()}  ${name.replace(/\s*Blackwell$/i, '').toUpperCase()}`, size: 118, weight: 600, tracking: 18 }];
+      // [логотип на графитовой кромке, печать модели на лицевой панели]
+      return [
+        { text: brand.toUpperCase(), size: 130, weight: 700, tracking: 14 },
+        { text: name.toUpperCase(), size: 150, weight: 600, tracking: 10 },
+      ];
     case 'RDIMM':
       return [
         { text: brand, size: 88, weight: 700 },

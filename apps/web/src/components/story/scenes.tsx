@@ -211,7 +211,7 @@ export function CollectionFooter({ data, locale }: SceneProps & { data: StoryDat
                     </div>
                   ))}
                 </dl>
-                <Link href={`/products/${product.slug}`} className="text-small font-medium after:absolute after:inset-0 hover:text-accent">
+                <Link href={`/products/${product.slug}`} data-transition-label={`${product.brand} ${product.name}`} className="text-small font-medium after:absolute after:inset-0 hover:text-accent">
                   {t('details')} <span aria-hidden>→</span>
                 </Link>
               </GlowCard>

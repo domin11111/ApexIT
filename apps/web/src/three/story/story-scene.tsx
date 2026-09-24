@@ -64,13 +64,14 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
   const intro = useRef({ beam: 0, model: 0, traces: 0 });
   const started = useRef(false);
   const spin = useRef(-0.55);
+  const streamSpeed = useRef(1);
 
   const controls = useMemo(
     () => ({
       venice: createRigControls(),
       turin: createRigControls(),
       memory: createRigControls(),
-      gpu: createRigControls({ spin: 3 }),
+      gpu: createRigControls(),
     }),
     [],
   );
@@ -167,10 +168,8 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
     controls.memory.glow.tsv = p.memory.tsv;
     controls.memory.glow.edge = p.memory.edge;
 
-    controls.gpu.glow.lightbar = p.gpu.glow;
-    // Вентиляторы: базовые обороты + скорость скролла
-    const targetSpin = 3 + Math.min(Math.abs(scrollState.velocity) * 18, 40);
-    controls.gpu.spin = MathUtils.damp(controls.gpu.spin, targetSpin, 2.5, delta);
+    // Server Edition пассивная: вместо вентиляторов поток данных ускоряется от скорости скролла
+    streamSpeed.current = MathUtils.damp(streamSpeed.current, 1 + Math.min(Math.abs(scrollState.velocity) * 5, 7), 2.5, delta);
 
     // Четыре тусклых модуля: ряд перед камерой, при схлопывании сходятся в центр
     const wide = aspect >= 1;
@@ -226,6 +225,7 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
           count={quality === 'high' ? 520 : 200}
           color={models.gpu.accent}
           getIntensity={() => pose.current?.stream ?? 0}
+          getSpeed={() => streamSpeed.current}
           getTarget={(out: Vector3) => {
             if (gpu.current) out.copy(gpu.current.position);
           }}

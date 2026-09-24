@@ -21,17 +21,19 @@ type ProductModelProps = GroupProps & {
   controls: RigControls;
   /** GLB-модель; не задана — процедурная по preset */
   source?: ModelSource;
+  /** Корень модели после сборки — например, чтобы хотспоты следовали за узлами при разборке */
+  onRoot?: (root: Object3D) => void;
 };
 
 /**
  * Модель продукта для любой сцены. Процедурная и GLB-модели управляются одинаково — через RigControls,
  * поэтому замена одной на другую (загрузка GLB в админке) не требует правок сцен.
  */
-export function ProductModel({ source, preset, accent, identity, controls, ...group }: ProductModelProps) {
+export function ProductModel({ source, preset, accent, identity, controls, onRoot, ...group }: ProductModelProps) {
   return source ? (
-    <GlbModel source={source} controls={controls} {...group} />
+    <GlbModel source={source} controls={controls} onRoot={onRoot} {...group} />
   ) : (
-    <ProceduralModel preset={preset} accent={accent} identity={identity} controls={controls} {...group} />
+    <ProceduralModel preset={preset} accent={accent} identity={identity} controls={controls} onRoot={onRoot} {...group} />
   );
 }
 
@@ -40,6 +42,7 @@ function ProceduralModel({
   accent,
   identity,
   controls,
+  onRoot,
   ...group
 }: Omit<ProductModelProps, 'source'>) {
   const brand = identity?.brand;
@@ -50,18 +53,29 @@ function ProceduralModel({
     [preset, accent, brand, name, codename],
   );
   useEffect(() => () => disposeModel(root), [root]);
-  return <RiggedObject root={root} controls={controls} {...group} />;
+  return <RiggedObject root={root} controls={controls} onRoot={onRoot} {...group} />;
 }
 
-function GlbModel({ source, controls, ...group }: GroupProps & { source: ModelSource; controls: RigControls }) {
+function GlbModel({
+  source,
+  controls,
+  onRoot,
+  ...group
+}: GroupProps & { source: ModelSource; controls: RigControls; onRoot?: (root: Object3D) => void }) {
   // true, true — декодеры Draco и Meshopt (модели сжимает пайплайн загрузки, этап 7)
   const { scene } = useGLTF(source.url, true, true);
   const root = useMemo(() => prepareGlb(scene, source.manifest), [scene, source.manifest]);
-  return <RiggedObject root={root} controls={controls} {...group} />;
+  return <RiggedObject root={root} controls={controls} onRoot={onRoot} {...group} />;
 }
 
-function RiggedObject({ root, controls, ...group }: GroupProps & { root: Object3D; controls: RigControls }) {
+function RiggedObject({
+  root,
+  controls,
+  onRoot,
+  ...group
+}: GroupProps & { root: Object3D; controls: RigControls; onRoot?: (root: Object3D) => void }) {
   const rig = useMemo(() => collectRig(root), [root]);
+  useEffect(() => onRoot?.(root), [root, onRoot]);
   useFrame((_, delta) => applyRig(rig, controls, delta));
   return (
     <group {...group}>

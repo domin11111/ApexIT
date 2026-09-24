@@ -1,6 +1,15 @@
 import 'server-only';
 import { buildCatalogRecords } from '@apex/collection';
-import { CompareResponse, ProductDetailDto, ProductListResponse, type Locale } from '@apex/contracts';
+import {
+  CompareResponse,
+  MotherboardListResponse,
+  PlatformListResponse,
+  ProductDetailDto,
+  ProductListResponse,
+  type Locale,
+  type MotherboardDto,
+  type PlatformDto,
+} from '@apex/contracts';
 import { createCatalogService, DomainError, type CatalogService } from '@apex/domain';
 import { createMemorySource } from '@apex/mocks';
 import { notFound } from 'next/navigation';
@@ -41,6 +50,18 @@ export async function getProduct(slug: string, locale: Locale): Promise<ProductD
     }
   }
   return fromApi(`/products/${encodeURIComponent(slug)}?locale=${locale}`, (body) => ProductDetailDto.parse(body));
+}
+
+export async function getPlatforms(locale: Locale): Promise<PlatformDto[]> {
+  if (!API_URL) return (await mockCatalog().listPlatforms(locale)).items;
+  return fromApi(`/platforms?locale=${locale}`, (body) => PlatformListResponse.parse(body).items);
+}
+
+export async function getMotherboards(socket: string, locale: Locale): Promise<MotherboardDto[]> {
+  if (!API_URL) return (await mockCatalog().listMotherboards(socket, locale)).items;
+  return fromApi(`/platforms/${encodeURIComponent(socket)}/motherboards?locale=${locale}`, (body) =>
+    MotherboardListResponse.parse(body).items,
+  );
 }
 
 export async function getCompare(slugs: string[], locale: Locale): Promise<CompareResponse> {

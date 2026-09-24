@@ -9,7 +9,10 @@ export function Header() {
   const locale = useLocale();
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[var(--z-header)]">
+    <header
+      // Подложка с размытием, которая плавно растворяется книзу: текст под шапкой не спорит с навигацией
+      className="fixed inset-x-0 top-0 z-[var(--z-header)] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:-z-10 before:h-[calc(var(--layout-header-h)+1.5rem)] before:bg-gradient-to-b before:from-void/90 before:via-void/60 before:to-transparent before:backdrop-blur-md before:[mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
+    >
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:rounded-md focus:bg-elevated focus:px-4 focus:py-2"

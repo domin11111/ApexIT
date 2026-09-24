@@ -1,7 +1,7 @@
 'use client';
 
 import { useFrame, useThree } from '@react-three/fiber';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { AdditiveBlending, BufferGeometry, Color, Float32BufferAttribute, ShaderMaterial, Vector3 } from 'three';
 import { random, sharedUniforms } from '../shared';
 
@@ -11,14 +11,18 @@ type DataStreamProps = {
   /** Куда втекают данные (мировые координаты видеокарты) */
   getTarget: (out: Vector3) => void;
   getIntensity: () => number;
+  /** Множитель скорости потока (1 — спокойный); сцена разгоняет его скоростью скролла */
+  getSpeed?: () => number;
 };
 
 /**
  * Частицы-«данные», втекающие в видеокарту слева. Траектория и ускорение — в шейдере:
  * CPU каждый кадр обновляет только цель и интенсивность.
  */
-export function DataStream({ count, color, getTarget, getIntensity }: DataStreamProps) {
+export function DataStream({ count, color, getTarget, getIntensity, getSpeed }: DataStreamProps) {
   const dpr = useThree((s) => s.viewport.dpr);
+  // Накопленная фаза вместо uTime × скорость: смена скорости не даёт скачков позиций
+  const phase = useRef(0);
 
   const geometry = useMemo(() => {
     const rnd = random(96);
@@ -40,6 +44,7 @@ export function DataStream({ count, color, getTarget, getIntensity }: DataStream
       new ShaderMaterial({
         uniforms: {
           uTime: sharedUniforms.uTime,
+          uPhase: { value: 0 },
           uColor: { value: new Color(color).multiplyScalar(2.2) },
           uIntensity: { value: 0 },
           uPixelRatio: { value: dpr },
@@ -49,12 +54,13 @@ export function DataStream({ count, color, getTarget, getIntensity }: DataStream
         vertexShader: /* glsl */ `
           attribute float aSeed;
           uniform float uTime;
+          uniform float uPhase;
           uniform float uPixelRatio;
           uniform vec3 uFrom;
           uniform vec3 uTo;
           varying float vAlpha;
           void main() {
-            float t = fract(uTime * (0.1 + aSeed * 0.08) + aSeed);
+            float t = fract(uPhase * (0.1 + aSeed * 0.08) + aSeed);
             // Ускорение к цели: частицы «засасывает» в карту, разброс сходится в точку
             float k = t * t;
             vec3 p = mix(uFrom + position, uTo + position * 0.08, k);
@@ -84,7 +90,9 @@ export function DataStream({ count, color, getTarget, getIntensity }: DataStream
     [color, dpr],
   );
 
-  useFrame(() => {
+  useFrame((_, delta) => {
+    phase.current += delta * (getSpeed?.() ?? 1);
+    material.uniforms.uPhase!.value = phase.current;
     const intensity = getIntensity();
     material.uniforms.uIntensity!.value = intensity;
     getTarget(material.uniforms.uTo!.value as Vector3);

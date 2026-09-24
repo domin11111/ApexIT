@@ -13,6 +13,11 @@ type StudioLightsProps = {
   getKey?: () => number;
   /** Цвет контрового света каждый кадр (акцент продукта текущей сцены) */
   getRim?: (color: Color) => void;
+  /**
+   * Контровой свет всегда за моделью относительно камеры — для вьюера с орбитой.
+   * Иначе при облёте он бьёт прямо в тыльную сторону и перекрашивает её в цвет акцента.
+   */
+  rimFollowsCamera?: boolean;
 };
 
 /**
@@ -20,14 +25,19 @@ type StudioLightsProps = {
  * контровой свет в цвете акцента продукта. Отражения на металле дают софтбоксы
  * из Lightformer — окружение строится локально, без загрузки HDRI из сети.
  */
-export function StudioLights({ accent, preset = 'studio', getKey, getRim }: StudioLightsProps) {
+export function StudioLights({ accent, preset = 'studio', getKey, getRim, rimFollowsCamera = false }: StudioLightsProps) {
   const cfg = scene.lighting[preset];
   const key = useRef<SpotLight>(null);
   const rim = useRef<DirectionalLight>(null);
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     if (key.current) key.current.intensity = cfg.key * (getKey?.() ?? 1);
     if (rim.current && getRim) getRim(rim.current.color);
+    if (rim.current && rimFollowsCamera) {
+      const { x, z } = camera.position;
+      // Чуть ниже горизонта: верхние грани не ловят блик, светится только силуэт
+      rim.current.position.set(-x, -0.3, -z).setLength(4.5);
+    }
   });
 
   return (
@@ -50,6 +60,8 @@ export function StudioLights({ accent, preset = 'studio', getKey, getRim }: Stud
         <Lightformer form="rect" intensity={2.6} position={[0, 5, 0]} rotation-x={Math.PI / 2} scale={[6, 2.5, 1]} />
         <Lightformer form="rect" intensity={1.1} position={[-5, 1, 1]} rotation-y={Math.PI / 2} scale={[4, 1, 1]} />
         <Lightformer form="rect" intensity={1.1} position={[5, 1, 1]} rotation-y={-Math.PI / 2} scale={[4, 1, 1]} />
+        {/* Фронтальный софтбокс, как в предметной съёмке: вертикальные металлические грани не уходят в черноту */}
+        <Lightformer form="rect" intensity={0.9} position={[0, 1.5, 6]} scale={[10, 2.5, 1]} />
         <Lightformer form="ring" color="#a9b8e8" intensity={1.3} position={[0, 0.5, -6]} scale={3} />
       </Environment>
     </>

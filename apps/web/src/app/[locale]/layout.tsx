@@ -8,6 +8,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Cursor } from '@/components/chrome/cursor';
 import { Grain } from '@/components/chrome/grain';
 import { Header } from '@/components/chrome/header';
+import { PageTransition } from '@/components/chrome/page-transition';
 import { Preloader } from '@/components/chrome/preloader';
 import { routing } from '@/i18n/routing';
 import { inter, jetbrainsMono } from '@/lib/fonts';
@@ -49,6 +50,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
             <Preloader />
             <Header />
             {children}
+            <PageTransition />
             <Cursor />
             <Grain />
           </AppProviders>

@@ -60,9 +60,10 @@ describe('процедурные модели', () => {
     expect(intensity('ccd_1')).toBe(0);
   });
 
-  it('вентиляторы GPU вращаются, остальное — нет', () => {
+  it('GPU — пассивная Server Edition: без вентиляторов, кожух и радиатор разбираются', () => {
     const root = buildProceduralModel('GPU_DUAL_SLOT', '#fff');
     const rig = collectRig(root);
-    expect(rig.spin.map((s) => s.node.parent?.name).sort()).toEqual(['fan_0', 'fan_1']);
+    expect(rig.spin).toHaveLength(0);
+    expect(rig.explode.map((part) => part.node.name).sort()).toEqual(['heatsink', 'shroud']);
   });
 });

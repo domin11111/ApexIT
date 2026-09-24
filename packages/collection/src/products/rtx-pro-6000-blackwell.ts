@@ -132,7 +132,8 @@ export const rtxPro6000Blackwell: SeedProduct = {
     },
   ],
 
-  // Модель GPU: x — длина, y — высота (разъём PCIe снизу), z — толщина (вентиляторы на z > 0), брекет на x = −1.
+  // Модель GPU (Server Edition): x — длина, y — высота (разъём PCIe снизу), z — толщина
+  // (лицевая панель на z > 0), брекет на x = −1, открытый торец с рёбрами на x = +1.
   hotspots: [
     {
       key: 'gpu-die',
@@ -160,14 +161,14 @@ export const rtxPro6000Blackwell: SeedProduct = {
     },
     {
       key: 'cooling',
-      anchorNode: 'fan_0',
-      position: [-0.45, 0, 0.14],
-      cameraPosition: [-0.6, 0.2, 1.4],
+      anchorNode: 'heatsink',
+      position: [0.95, 0.05, 0.02],
+      cameraPosition: [1.9, 0.35, 1.1],
       visibility: 'ASSEMBLED',
-      title: ['Двойной сквозной обдув', 'Double flow-through cooling'],
+      title: ['Пассивный радиатор', 'Passive heatsink'],
       body: [
-        'Два вентилятора прогоняют воздух сквозь радиатор и отводят 600 Вт в двухслотовом корпусе.',
-        'Two fans push air straight through the heatsink, dissipating 600 W in a dual-slot design.',
+        'Server Edition без вентиляторов: воздух прогоняют вентиляторы сервера сквозь плотное оребрение — так карта отводит до 600 Вт в двухслотовом корпусе.',
+        'The Server Edition has no fans: the server’s own airflow is pushed through dense fins, letting the card shed up to 600 W in a dual-slot body.',
       ],
     },
     {
