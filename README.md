@@ -29,7 +29,11 @@ Micron 512GB DDR5 RDIMM, NVIDIA RTX PRO 6000 Blackwell.
 
 ## Быстрый старт
 
-Требуется Node.js ≥ 22.12, pnpm 10 (через `corepack enable`) и Docker.
+Требуется Node.js 24 LTS (минимум 22.12, см. `.nvmrc`), pnpm 10.34 (`npm i -g pnpm@10.34.5`
+или `corepack enable`) и Docker Desktop с WSL 2.
+
+Для VS Code в `.vscode/extensions.json` перечислены рекомендуемые расширения: Prisma, ESLint,
+Prettier, Tailwind CSS, EditorConfig, Vitest, Docker, GLSL.
 
 ```bash
 cp .env.example .env
