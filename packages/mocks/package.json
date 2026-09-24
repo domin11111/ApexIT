@@ -1,10 +1,10 @@
 {
-  "name": "@apex/collection",
+  "name": "@apex/mocks",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "description": "Канонические данные коллекции: источник для сида БД и MSW-моков фронта",
+  "description": "MSW-моки публичного API на данных коллекции — для фронта до готовности бэкенда",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -14,13 +14,15 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@apex/collection": "workspace:*",
     "@apex/contracts": "workspace:*",
     "@apex/domain": "workspace:*",
-    "@apex/ui": "workspace:*",
+    "msw": "^2.15.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@apex/config": "workspace:*",
+    "@types/node": "^24.0.0",
     "eslint": "^10.11.0",
     "typescript": "~6.0.3",
     "vitest": "^5.0.1"

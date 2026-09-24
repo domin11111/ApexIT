@@ -1,10 +1,10 @@
 {
-  "name": "@apex/collection",
+  "name": "@apex/domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "description": "Канонические данные коллекции: источник для сида БД и MSW-моков фронта",
+  "description": "Логика каталога без привязки к фреймворку: DTO-маппинг, локализация, сравнение",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -14,10 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@apex/contracts": "workspace:*",
-    "@apex/domain": "workspace:*",
-    "@apex/ui": "workspace:*",
-    "zod": "^4.6.5"
+    "@apex/contracts": "workspace:*"
   },
   "devDependencies": {
     "@apex/config": "workspace:*",

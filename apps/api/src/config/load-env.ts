@@ -1,12 +1,10 @@
+import { resolve } from 'node:path';
 import { config } from 'dotenv';
-import { fileURLToPath } from 'node:url';
 
-// Сначала apps/api/.env, затем корневой .env монорепо. dotenv не перезаписывает уже заданные
-// переменные, поэтому окружение процесса (CI, Docker) всегда главнее файлов.
-config({
-  path: [
-    fileURLToPath(new URL('../../.env', import.meta.url)),
-    fileURLToPath(new URL('../../../../.env', import.meta.url)),
-  ],
-  quiet: true,
-});
+// В production переменные приходят из окружения контейнера — файлы .env не читаем.
+// Локально: сначала .env рабочей директории (apps/api), затем корневой .env монорепо.
+// Пути — от process.cwd(), а не от файла: после бандлинга import.meta.url указывает в dist/.
+// dotenv не перезаписывает уже заданные переменные, так что окружение процесса всегда главнее.
+if (process.env.NODE_ENV !== 'production') {
+  config({ path: [resolve('.env'), resolve('../../.env')], quiet: true });
+}

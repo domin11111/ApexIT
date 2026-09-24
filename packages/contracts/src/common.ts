@@ -7,6 +7,10 @@ export const DEFAULT_LOCALE: Locale = 'ru';
 
 export const Slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Только a-z, 0-9 и дефисы');
 
+/** ?locale=en — у всех публичных GET-эндпоинтов. */
+export const LocaleQuery = z.object({ locale: Locale.default('ru') });
+export type LocaleQuery = z.infer<typeof LocaleQuery>;
+
 export const HexColor = z.string().regex(/^#[0-9a-f]{6}$/i, 'Цвет в формате #rrggbb');
 
 /**
@@ -24,12 +28,14 @@ export const ASSET_BUDGET = {
 } as const;
 
 /** Единый формат ошибки API. */
-export const ApiError = z.object({
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    details: z.unknown().optional(),
-    requestId: z.string().optional(),
-  }),
-});
+export const ApiError = z
+  .object({
+    error: z.object({
+      code: z.string(),
+      message: z.string(),
+      details: z.unknown().optional(),
+      requestId: z.string().optional(),
+    }),
+  })
+  .meta({ id: 'ApiError' });
 export type ApiError = z.infer<typeof ApiError>;

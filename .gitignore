@@ -15,6 +15,9 @@ apps/api/src/generated/
 .env.*
 !.env.example
 
+# Локальный запуск превью в Claude Code (пути под конкретную ОС)
+.claude/launch.json
+
 # ОС / редакторы
 .DS_Store
 Thumbs.db

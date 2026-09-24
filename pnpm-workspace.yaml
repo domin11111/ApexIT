@@ -7,3 +7,11 @@ onlyBuiltDependencies:
   - "@prisma/engines"
   - prisma
   - esbuild
+
+# Скрипты не нужны: нативные ускорители Testcontainers (ssh2/cpu-features) опциональны,
+# worker MSW для браузера кладётся в apps/web командой `msw init`.
+ignoredBuiltDependencies:
+  - cpu-features
+  - ssh2
+  - protobufjs
+  - msw

@@ -1,0 +1,1521 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APEX // Compute Collection API",
+    "version": "1.0.0",
+    "description": "Публичный API каталога флагманских серверных комплектующих. Тексты локализуются параметром `locale` (ru — по умолчанию, en)."
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {},
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Platform": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "socket": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cpuFamily": {
+            "type": "string"
+          },
+          "memoryChannels": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "dimmsPerChannel": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maxMemorySpeedMts": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxMrdimmSpeedMts": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pcieGen": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pcieLanes1P": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pcieLanes2P": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cxlVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "maxSockets": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxCpuTdpW": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "COMING_SOON",
+              "PREVIEW"
+            ]
+          },
+          "availabilityWindow": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "availabilityNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "socket",
+          "name",
+          "cpuFamily",
+          "memoryChannels",
+          "dimmsPerChannel",
+          "maxMemorySpeedMts",
+          "maxMrdimmSpeedMts",
+          "pcieGen",
+          "pcieLanes1P",
+          "pcieLanes2P",
+          "cxlVersion",
+          "maxSockets",
+          "maxCpuTdpW",
+          "status",
+          "availabilityWindow",
+          "availabilityNote"
+        ],
+        "additionalProperties": false
+      },
+      "Motherboard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "socket": {
+            "type": "string"
+          },
+          "formFactor": {
+            "type": "string"
+          },
+          "sockets": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2
+          },
+          "dimmSlots": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxMemoryGb": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maxCpuTdpW": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pcieX16Slots": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mcioX8Ports": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "COMING_SOON",
+              "PREVIEW"
+            ]
+          },
+          "availabilityWindow": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isPlaceholder": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "vendor",
+          "model",
+          "socket",
+          "formFactor",
+          "sockets",
+          "dimmSlots",
+          "maxMemoryGb",
+          "maxCpuTdpW",
+          "pcieX16Slots",
+          "mcioX8Ports",
+          "features",
+          "status",
+          "availabilityWindow",
+          "isPlaceholder",
+          "note",
+          "sourceUrl"
+        ],
+        "additionalProperties": false
+      },
+      "Compatibility": {
+        "type": "object",
+        "properties": {
+          "socket": {
+            "type": "string"
+          },
+          "platformName": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "SUPPORTED",
+              "VALIDATING"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "socket",
+          "platformName",
+          "level",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "Spec": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "numericValue": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "highlight": {
+            "type": "boolean"
+          },
+          "compareDirection": {
+            "type": "string",
+            "enum": [
+              "HIGHER_BETTER",
+              "LOWER_BETTER",
+              "NONE"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value",
+          "numericValue",
+          "unit",
+          "highlight",
+          "compareDirection",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "SpecGroup": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "specs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Spec"
+            }
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "specs"
+        ],
+        "additionalProperties": false
+      },
+      "Hotspot": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "anchorNode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false,
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "cameraPosition": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false,
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "cameraTarget": {
+            "anyOf": [
+              {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "items": false,
+                "minItems": 3,
+                "maxItems": 3
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "ALWAYS",
+              "ASSEMBLED",
+              "EXPLODED"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "anchorNode",
+          "position",
+          "cameraPosition",
+          "cameraTarget",
+          "visibility",
+          "title",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "Asset": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "GLB",
+              "IMAGE",
+              "VIDEO",
+              "HDRI"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "enum": [
+              "DESKTOP",
+              "MOBILE"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "variant",
+          "url",
+          "mimeType",
+          "sizeBytes",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "ProductSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CPU",
+              "MEMORY",
+              "GPU",
+              "MOTHERBOARD"
+            ]
+          },
+          "codename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "headline": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "COMING_SOON",
+              "PREVIEW"
+            ]
+          },
+          "availabilityWindow": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accentColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "accentColorAlt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "modelPreset": {
+            "type": "string",
+            "enum": [
+              "CPU_SP5",
+              "CPU_SP7",
+              "RDIMM",
+              "GPU_DUAL_SLOT",
+              "MOTHERBOARD"
+            ]
+          },
+          "heroImage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Spec"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "brand",
+          "category",
+          "codename",
+          "headline",
+          "tagline",
+          "status",
+          "availabilityWindow",
+          "accentColor",
+          "accentColorAlt",
+          "modelPreset",
+          "heroImage",
+          "sortOrder",
+          "highlights"
+        ],
+        "additionalProperties": false
+      },
+      "ProductDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CPU",
+              "MEMORY",
+              "GPU",
+              "MOTHERBOARD"
+            ]
+          },
+          "codename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "headline": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "COMING_SOON",
+              "PREVIEW"
+            ]
+          },
+          "availabilityWindow": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accentColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          },
+          "accentColorAlt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9a-f]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "modelPreset": {
+            "type": "string",
+            "enum": [
+              "CPU_SP5",
+              "CPU_SP7",
+              "RDIMM",
+              "GPU_DUAL_SLOT",
+              "MOTHERBOARD"
+            ]
+          },
+          "heroImage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Spec"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "availabilityNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "specGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpecGroup"
+            }
+          },
+          "hotspots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hotspot"
+            }
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          },
+          "compatibility": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Compatibility"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "brand",
+          "category",
+          "codename",
+          "headline",
+          "tagline",
+          "status",
+          "availabilityWindow",
+          "accentColor",
+          "accentColorAlt",
+          "modelPreset",
+          "heroImage",
+          "sortOrder",
+          "highlights",
+          "description",
+          "availabilityNote",
+          "specGroups",
+          "hotspots",
+          "models",
+          "compatibility"
+        ],
+        "additionalProperties": false
+      },
+      "CompareCell": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "numericValue": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "isBest": {
+            "type": "boolean"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "value",
+          "numericValue",
+          "isBest",
+          "ratio"
+        ],
+        "additionalProperties": false
+      },
+      "CompareRow": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "groupKey": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "HIGHER_BETTER",
+              "LOWER_BETTER",
+              "NONE"
+            ]
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompareCell"
+            }
+          }
+        },
+        "required": [
+          "key",
+          "groupKey",
+          "label",
+          "unit",
+          "direction",
+          "cells"
+        ],
+        "additionalProperties": false
+      },
+      "CompareResponse": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "CPU",
+              "MEMORY",
+              "GPU",
+              "MOTHERBOARD"
+            ]
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductSummary"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompareRow"
+            }
+          }
+        },
+        "required": [
+          "category",
+          "products",
+          "rows"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Состояние сервиса",
+        "tags": [
+          "system"
+        ],
+        "description": "200 — БД доступна (даже без кэша), 503 — БД недоступна.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "degraded",
+                        "down"
+                      ]
+                    },
+                    "uptimeSeconds": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "fail"
+                          ]
+                        },
+                        "cache": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "fail"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "database",
+                        "cache"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "uptimeSeconds",
+                    "checks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "degraded",
+                        "down"
+                      ]
+                    },
+                    "uptimeSeconds": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "fail"
+                          ]
+                        },
+                        "cache": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "fail"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "database",
+                        "cache"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "uptimeSeconds",
+                    "checks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "summary": "Продукты коллекции",
+        "tags": [
+          "catalog"
+        ],
+        "description": "Опубликованные продукты в порядке презентации. Фильтры — по категории и статусу.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CPU",
+                "MEMORY",
+                "GPU",
+                "MOTHERBOARD"
+              ]
+            },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AVAILABLE",
+                "COMING_SOON",
+                "PREVIEW"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": "ru",
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProductSummary"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/{slug}": {
+      "get": {
+        "summary": "Продукт со всеми характеристиками",
+        "tags": [
+          "catalog"
+        ],
+        "description": "Характеристики по группам, хотспоты 3D-модели, ассеты и совместимость с платформами.",
+        "parameters": [
+          {
+            "schema": {
+              "default": "ru",
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "in": "path",
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compare": {
+      "get": {
+        "summary": "Сравнение 2–3 продуктов одной категории",
+        "tags": [
+          "catalog"
+        ],
+        "description": "Нормализованная таблица: строки по ключам характеристик, лучшее значение и доли для баров.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "slugs",
+            "required": true
+          },
+          {
+            "schema": {
+              "default": "ru",
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platforms": {
+      "get": {
+        "summary": "Серверные платформы (сокеты)",
+        "tags": [
+          "platforms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": "ru",
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Platform"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platforms/{socket}/motherboards": {
+      "get": {
+        "summary": "Материнские платы платформы",
+        "tags": [
+          "platforms"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": "ru",
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{2,16}$"
+            },
+            "in": "path",
+            "name": "socket",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Motherboard"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "catalog",
+      "description": "Продукты коллекции и сравнение"
+    },
+    {
+      "name": "platforms",
+      "description": "Сокеты и материнские платы"
+    },
+    {
+      "name": "system",
+      "description": "Служебные эндпоинты"
+    }
+  ]
+}

@@ -17,7 +17,9 @@ Micron 512GB DDR5 RDIMM, NVIDIA RTX PRO 6000 Blackwell.
 │  └─ web/                    Next.js 15 + R3F + GSAP                    (этап 3)
 ├─ packages/
 │  ├─ contracts/              Zod-схемы API и общие перечисления (единый источник истины)
+│  ├─ domain/                 логика каталога без фреймворка: DTO, локализация, сравнение
 │  ├─ collection/             данные коллекции: вход для сида и MSW-моков фронта
+│  ├─ mocks/                  MSW-обработчики /api/v1 для фронта до готовности бэкенда
 │  ├─ ui/                     дизайн-токены (TS + CSS для Tailwind 4), позже — компоненты
 │  └─ config/                 общие tsconfig и ESLint
 ├─ docker-compose.yml         PostgreSQL 17, Redis 7
@@ -44,6 +46,32 @@ pnpm db:seed           # залить коллекцию
 pnpm test              # токены ↔ CSS, данные коллекции ↔ бриф
 pnpm typecheck
 ```
+
+## API
+
+```bash
+pnpm --filter @apex/api dev       # http://localhost:4000, документация — /docs
+pnpm --filter @apex/api build     # бандл dist/server.mjs (tsdown)
+pnpm --filter @apex/api openapi   # выгрузить apps/api/openapi.json
+```
+
+| Метод | Путь | Что отдаёт |
+|---|---|---|
+| GET | `/api/v1/products?category=&status=&locale=` | продукты коллекции |
+| GET | `/api/v1/products/:slug?locale=` | продукт: характеристики, хотспоты, модели, совместимость |
+| GET | `/api/v1/compare?slugs=a,b[,c]&locale=` | таблица сравнения с лучшими значениями и долями для баров |
+| GET | `/api/v1/platforms?locale=` | сокеты SP5 / SP7 |
+| GET | `/api/v1/platforms/:socket/motherboards?locale=` | материнские платы платформы |
+| GET | `/health` | состояние БД и кэша |
+
+Ответы каталога кэшируются в Redis (5 минут, сброс — инкремент версии каталога), отдаются
+с ETag (`If-None-Match` → 304) и `Cache-Control: public, max-age=60, stale-while-revalidate=300`.
+Без Redis API продолжает работать — из БД, без кэша и лимитов. Ошибки — в едином формате
+`{ error: { code, message, details?, requestId } }`.
+
+Архитектура: сценарии каталога живут в `@apex/domain` и работают поверх `CatalogSource`.
+API подставляет источник на Prisma, моки — источник в памяти на тех же записях коллекции,
+поэтому ответы совпадают по построению; интеграционный тест сверяет их побайтно.
 
 ## Договорённости
 

@@ -1,5 +1,7 @@
 import { isOrderable } from '@apex/contracts';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+import { buildCatalogRecords, stableUuid } from './records';
 import { loadCollection } from './validate';
 
 const data = loadCollection();
@@ -79,6 +81,20 @@ describe('коллекция', () => {
     const preview = data.products.filter((p) => p.status === 'PREVIEW');
     expect(preview.length).toBeGreaterThan(0);
     for (const p of preview) expect(isOrderable(p.status)).toBe(false);
+  });
+
+  it('записи для сида и моков: стабильные валидные UUID, переводы в i18n', () => {
+    expect(stableUuid('product:epyc-9965')).toBe(stableUuid('product:epyc-9965'));
+    expect(stableUuid('a')).not.toBe(stableUuid('b'));
+
+    const records = buildCatalogRecords(data);
+    const ids = [...records.products, ...records.platforms, ...records.motherboards].map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(z.uuid().safeParse(id).success, id).toBe(true);
+
+    const venice = records.products.find((p) => p.slug === 'epyc-9996-venice');
+    expect(venice?.tagline).toBe('256 ядер. 2 нанометра. Новая эпоха.');
+    expect(venice?.i18n).toMatchObject({ en: { tagline: '256 cores. 2 nanometers. A new era.' } });
   });
 
   it('Venice нет на SP5, а 9965 — на SP7', () => {
