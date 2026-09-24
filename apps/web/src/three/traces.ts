@@ -181,6 +181,8 @@ type TraceMaterialOptions = {
   speed?: number;
   /** Радиальное затухание [начало, конец] — для «пола» из трасс */
   fade?: [number, number];
+  /** Сколько трассы уже «прорисовано» от начала (в единицах длины); uniform uReveal */
+  reveal?: number;
 };
 
 /**
@@ -193,6 +195,7 @@ export function createTraceMaterial({
   spacing = 1.6,
   speed = 0.35,
   fade = [1e3, 1e3 + 1],
+  reveal = 1e6,
 }: TraceMaterialOptions): ShaderMaterial {
   return new ShaderMaterial({
     uniforms: {
@@ -202,6 +205,7 @@ export function createTraceMaterial({
       uSpacing: { value: spacing },
       uSpeed: { value: speed },
       uFade: { value: new Vector2(fade[0], fade[1]) },
+      uReveal: { value: reveal },
     },
     vertexShader: /* glsl */ `
       attribute float aProgress;
@@ -226,18 +230,22 @@ export function createTraceMaterial({
       uniform float uSpacing;
       uniform float uSpeed;
       uniform vec2 uFade;
+      uniform float uReveal;
       varying float vProgress;
       varying float vSeed;
       varying float vAcross;
       varying float vRadius;
       void main() {
+        // Прорисовка трассы от начала: дальше uReveal её ещё нет, на фронте — яркая «головка»
+        if (vProgress > uReveal) discard;
+        float front = 1.0 - smoothstep(0.0, 0.18, uReveal - vProgress);
         // Мягкий край поперёк ленты
         float line = smoothstep(0.0, 0.45, 1.0 - abs(vAcross - 0.5) * 2.0);
         // Бегущий градиент: фаза растёт вдоль трассы и сдвигается во времени
         float phase = fract(vProgress / uSpacing - uTime * uSpeed + vSeed);
         float head = smoothstep(0.82, 0.985, phase) * (1.0 - smoothstep(0.985, 1.0, phase));
         float tail = smoothstep(0.35, 0.985, phase) * 0.35;
-        float glow = 0.16 + tail + head * 3.2;
+        float glow = 0.16 + tail + head * 3.2 + front * 3.0;
         float fade = 1.0 - smoothstep(uFade.x, uFade.y, vRadius);
         float alpha = line * fade * clamp(uIntensity, 0.0, 1.0);
         gl_FragColor = vec4(uColor * glow * uIntensity, alpha);

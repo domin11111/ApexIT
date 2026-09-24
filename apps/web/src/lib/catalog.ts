@@ -1,6 +1,6 @@
 import 'server-only';
 import { buildCatalogRecords } from '@apex/collection';
-import { ProductDetailDto, ProductListResponse, type Locale } from '@apex/contracts';
+import { CompareResponse, ProductDetailDto, ProductListResponse, type Locale } from '@apex/contracts';
 import { createCatalogService, DomainError, type CatalogService } from '@apex/domain';
 import { createMemorySource } from '@apex/mocks';
 import { notFound } from 'next/navigation';
@@ -41,4 +41,11 @@ export async function getProduct(slug: string, locale: Locale): Promise<ProductD
     }
   }
   return fromApi(`/products/${encodeURIComponent(slug)}?locale=${locale}`, (body) => ProductDetailDto.parse(body));
+}
+
+export async function getCompare(slugs: string[], locale: Locale): Promise<CompareResponse> {
+  if (!API_URL) return mockCatalog().compare(slugs, locale);
+  return fromApi(`/compare?slugs=${slugs.map(encodeURIComponent).join(',')}&locale=${locale}`, (body) =>
+    CompareResponse.parse(body),
+  );
 }

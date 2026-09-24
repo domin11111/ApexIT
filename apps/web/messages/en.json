@@ -28,11 +28,6 @@
     "featured": "In the spotlight",
     "scroll": "Scroll"
   },
-  "teaser": {
-    "eyebrow": "Scene 2 · coming soon",
-    "title": "8 chiplets. 32 cores in each.",
-    "body": "Next, the lid lifts and we look inside Venice. This scene arrives in the next stage."
-  },
   "fallback": {
     "webgl": "Your browser doesn’t support WebGL — showing a static view."
   },
@@ -49,5 +44,55 @@
     "spin": "Fans",
     "lighting": "Lighting",
     "nodes": "Hotspot nodes"
+  },
+  "story": {
+    "rail": "Presentation chapters",
+    "scenes": {
+      "hero": "Collection",
+      "chiplets": "Chiplets",
+      "generations": "Generations",
+      "memory": "Memory",
+      "gpu": "Graphics",
+      "assembly": "Assembly",
+      "footer": "Catalog"
+    },
+    "chiplets": {
+      "title": "8 chiplets. 32 cores in each.",
+      "body": "Beneath the lid: eight compute dies on TSMC’s 2 nm process and two I/O dies. Each one lights up with its own 32 cores.",
+      "counter": "cores"
+    },
+    "generations": {
+      "eyebrow": "Turin Dense → Venice",
+      "title": "More cores. Nearly triple the cache.",
+      "body": "EPYC 9965 set the bar for density. Venice raises it on the new SP7 platform."
+    },
+    "memory": {
+      "body": "DRAM dies are stacked and stitched together with through-silicon vias — TSVs. That is how half a terabyte fits on a single module.",
+      "counter": "GB on one module",
+      "before": "Before: 4 modules × 128 GB",
+      "after": "Now: 1 module × 512 GB",
+      "saving": "less power"
+    },
+    "gpu": {
+      "body": "Fifth-gen Tensor Cores with FP4 and 96 GB of ECC memory: large models, scenes and simulations fit entirely on one card.",
+      "vram": "GB GDDR7",
+      "cuda": "CUDA cores",
+      "bandwidth": "GB/s bandwidth"
+    },
+    "assembly": {
+      "eyebrow": "Assembly",
+      "title": "Four flagships. One system.",
+      "body": "The processor goes into the SP7 socket, memory into the slots, graphics into PCIe. Build your configuration and get a quote.",
+      "cta": "Build your system"
+    },
+    "footer": {
+      "title": "The full collection",
+      "details": "Details",
+      "contacts": "Get in touch",
+      "email": "sales@apex-compute.example",
+      "telegram": "@apex_compute",
+      "disclaimer": "AMD, EPYC, Micron, NVIDIA, RTX and Blackwell are trademarks of their respective owners. Specifications of unannounced and preview products are preliminary and subject to change.",
+      "rights": "© 2026 APEX // Compute Collection"
+    }
   }
 }

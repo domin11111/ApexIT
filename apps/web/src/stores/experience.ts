@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { defaultMarks, type StoryClock } from '@/story/clock';
 
 /** loading — прелоадер на экране; revealing — шторка уходит, стартует интро; ready — всё показано. */
 export type Phase = 'loading' | 'revealing' | 'ready';
@@ -37,10 +38,20 @@ export const useExperience = create<ExperienceState>()((set) => ({
 }));
 
 /**
- * Прогресс скролла по сценам. Обычный изменяемый объект, а не состояние React:
- * ScrollTrigger пишет в него на каждом кадре, 3D-сцена читает в useFrame — без ре-рендеров.
+ * Позиция скролла для сторителлинга. Обычный изменяемый объект, а не состояние React:
+ * ScrollTrigger пишет в него на каждом кадре, 3D-сцена и HTML-счётчики читают — без ре-рендеров.
  */
 export const scrollState = {
-  /** 0 — hero на экране, 1 — hero ушёл вверх */
-  hero: 0,
+  /** Позиция в экранах (высотах вьюпорта) */
+  screens: 0,
+  /** Скорость скролла, экранов в секунду (со знаком) — крутит вентиляторы GPU */
+  velocity: 0,
+  /** Начало и длина секций в экранах — измеряет StoryScroll */
+  marks: defaultMarks(),
+  reduced: false,
 };
+
+/** Часы сторителлинга на текущий момент. */
+export function storyClock(): StoryClock {
+  return { screens: scrollState.screens, marks: scrollState.marks, reduced: scrollState.reduced };
+}

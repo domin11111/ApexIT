@@ -5,9 +5,9 @@ import { motion } from '@apex/ui/tokens';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
-import { gsap, ScrollTrigger, SplitText, useGSAP } from '@/lib/gsap';
+import { gsap, SplitText, useGSAP } from '@/lib/gsap';
 import { useLenis } from '@/providers/smooth-scroll';
-import { scrollState, useExperience } from '@/stores/experience';
+import { useExperience } from '@/stores/experience';
 import { StatusBadge } from '../ui/status-badge';
 
 export type HeroProduct = {
@@ -44,20 +44,12 @@ export function HeroSection({ product, locale }: { product: HeroProduct; locale:
         .from('[data-year]', { yPercent: 115, duration: 1.3 }, 0.35)
         .from('[data-fade]', { y: 24, autoAlpha: 0, duration: 1, stagger: 0.12 }, 0.5);
 
-      // Уход hero при скролле: текст поднимается и гаснет, сцена читает прогресс из scrollState
+      // Уход hero при скролле: текст поднимается и гаснет (3D-сцену ведёт режиссёр по StoryScroll)
       gsap.to('[data-hero-content]', {
         yPercent: -18,
         autoAlpha: 0,
         ease: 'none',
         scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true },
-      });
-      ScrollTrigger.create({
-        trigger: root.current,
-        start: 'top top',
-        end: 'bottom top',
-        onUpdate: (self) => {
-          scrollState.hero = self.progress;
-        },
       });
       return () => split.revert();
     },
@@ -79,7 +71,7 @@ export function HeroSection({ product, locale }: { product: HeroProduct; locale:
   const fullName = `${product.brand} ${product.name}${product.codename ? ` «${product.codename}»` : ''}`;
 
   return (
-    <section ref={root} aria-labelledby="hero-title" className="relative z-[var(--z-content)] h-[100svh] min-h-[620px]">
+    <section ref={root} data-scene="hero" aria-labelledby="hero-title" className="relative z-[var(--z-content)] h-[100svh] min-h-[620px]">
       {/* Затемнение под подписями: светящиеся дорожки не должны съедать контраст текста */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-void via-void/70 to-transparent" />
       {/* Композиция «премьеры»: заголовок сверху, экспонат в луче по центру (3D), подписи снизу */}

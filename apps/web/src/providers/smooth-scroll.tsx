@@ -35,6 +35,8 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
     useLenisStore.setState({ lenis });
+    // Для отладки и e2e-тестов: мгновенный переход к нужной сцене
+    if (process.env.NODE_ENV !== 'production') (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
 
     return () => {
       gsap.ticker.remove(tick);

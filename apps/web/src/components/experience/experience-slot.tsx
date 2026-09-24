@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
 import { useExperience, type Quality } from '@/stores/experience';
-import type { HeroModel } from '@/three/scenes/hero-scene';
+import type { StoryModels } from '@/three/story/story-scene';
 import { StaticFallback } from './static-fallback';
 
 // three.js и сцена — отдельный чанк: не блокируют LCP (заголовок hero — обычный HTML)
@@ -24,7 +24,7 @@ function deviceCeiling(): Quality {
   return coarse || window.innerWidth < 768 ? 'medium' : 'high';
 }
 
-export function ExperienceSlot({ hero }: { hero: HeroModel }) {
+export function ExperienceSlot({ models }: { models: StoryModels }) {
   const webgl = useExperience((s) => s.webgl);
   const setWebgl = useExperience((s) => s.setWebgl);
   const setQuality = useExperience((s) => s.setQuality);
@@ -35,7 +35,7 @@ export function ExperienceSlot({ hero }: { hero: HeroModel }) {
     if (supported) setQuality(deviceCeiling());
   }, [setWebgl, setQuality]);
 
-  if (webgl === 'unsupported') return <StaticFallback accent={hero.accent} accentAlt={hero.accentAlt} />;
+  if (webgl === 'unsupported') return <StaticFallback accent={models.venice.accent} accentAlt={models.venice.accentAlt} />;
   if (webgl === 'unknown') return null;
-  return <HomeExperience hero={hero} ceiling={deviceCeiling()} />;
+  return <HomeExperience models={models} ceiling={deviceCeiling()} />;
 }

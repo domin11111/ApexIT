@@ -19,7 +19,7 @@ export function StatusBadge({
   const tone = TONE[STATUS_META[status].tone];
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-pill border border-current/30 px-3 py-1 font-mono text-caption uppercase tracking-caption ${tone}`}
+      className={`inline-flex items-center gap-2 whitespace-nowrap rounded-pill border border-current/30 px-3 py-1 font-mono text-caption uppercase tracking-caption ${tone}`}
     >
       <span className="size-1.5 rounded-full bg-current shadow-[0_0_10px_currentColor]" aria-hidden />
       {statusBadge(status, locale, window)}

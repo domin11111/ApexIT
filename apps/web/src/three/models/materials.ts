@@ -30,6 +30,21 @@ export function createMaterialKit(accent: string) {
     aluminum: physical({ color: '#a4a9b3', roughness: 0.32, metalness: 1 }),
     plastic: physical({ color: '#0d0e12', roughness: 0.75, metalness: 0 }),
     silicon: physical({ ...m.silicon }),
+    /** Тусклые статисты (сравнение энергопотребления): прозрачность ведёт сцена */
+    dimPcb: physical({ color: '#2b2f38', roughness: 0.85, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false }),
+    dimMold: physical({ color: '#3b3f48', roughness: 0.75, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false }),
+    /** Полупрозрачная схема платы в сцене сборки */
+    schematic: physical({
+      color: '#0d1117',
+      roughness: 0.4,
+      metalness: 0.2,
+      clearcoat: 1,
+      clearcoatRoughness: 0.15,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+    }),
+    outline: physical({ color: '#2a3140', roughness: 0.5, metalness: 0.6, transparent: true, opacity: 0.9 }),
 
     /** Кристалл с подсветкой ядер (emissiveMap — сетка ядер). */
     die: (texture: Texture | null) =>

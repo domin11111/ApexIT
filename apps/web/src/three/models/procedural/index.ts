@@ -1,10 +1,10 @@
 import type { ModelPreset } from '@apex/contracts';
-import { Group } from 'three';
+import type { Group } from 'three';
 import type { LabelLine } from '../labels';
 import { createMaterialKit } from '../materials';
+import { buildBoard } from './board';
 import { buildCpu } from './cpu';
 import { buildGpu } from './gpu';
-import { rounded } from './parts';
 import { buildRdimm } from './rdimm';
 
 /** Что написать на модели: берётся из данных продукта. */
@@ -53,14 +53,11 @@ export function buildProceduralModel(preset: ModelPreset, accent: string, identi
       return buildRdimm(kit, marking);
     case 'GPU_DUAL_SLOT':
       return buildGpu(kit, marking);
-    case 'MOTHERBOARD': {
-      // Полноценная плата появится вместе с конфигуратором (этап 6)
-      const board = new Group();
-      board.name = 'motherboard';
-      board.add(rounded('pcb', [2, 0.03, 1.7], 0.01, kit.pcb));
-      return board;
-    }
+    case 'MOTHERBOARD':
+      return buildBoard(kit);
   }
 }
 
+export { BOARD } from './board';
 export { CPU_CCD_COUNT } from './cpu';
+export { buildRdimmSimple } from './rdimm';
