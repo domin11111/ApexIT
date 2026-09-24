@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 по умолчанию блокирует install-скрипты зависимостей — разрешаем только нужные.
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - prisma
+  - esbuild

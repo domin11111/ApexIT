@@ -1,0 +1,9 @@
+{
+  "extends": "@apex/config/tsconfig/node.json",
+  "compilerOptions": {
+    // Сгенерированный Prisma Client проверяется вместе с нашим кодом; строгий verbatimModuleSyntax
+    // для него не гарантирован. `import type` в нашем коде по-прежнему требует ESLint.
+    "verbatimModuleSyntax": false
+  },
+  "include": ["src", "prisma", "prisma.config.ts"]
+}

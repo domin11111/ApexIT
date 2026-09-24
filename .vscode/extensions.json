@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "Prisma.prisma",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "EditorConfig.EditorConfig",
+    "vitest.explorer",
+    "ms-azuretools.vscode-docker",
+    "raczzalan.webgl-glsl-editor"
+  ]
+}

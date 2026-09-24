@@ -1,0 +1,27 @@
+{
+  "name": "@apex/collection",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "description": "Канонические данные коллекции: источник для сида БД и MSW-моков фронта",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@apex/contracts": "workspace:*",
+    "@apex/ui": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@apex/config": "workspace:*",
+    "eslint": "^10.11.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
+  }
+}

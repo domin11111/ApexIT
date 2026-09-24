@@ -1,0 +1,26 @@
+{
+  "name": "@apex/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens/tokens.ts",
+    "./tokens.css": "./src/tokens/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@apex/config": "workspace:*",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.11.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
+  }
+}

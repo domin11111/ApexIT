@@ -1,0 +1,428 @@
+// APEX // Compute Collection — модель данных.
+//
+// Prisma 7: строка подключения задаётся в prisma.config.ts, клиент работает через драйвер-адаптер
+// (@prisma/adapter-pg). Перечисления совпадают с @apex/contracts — это проверяет src/db/enum-parity.ts.
+//
+// Локализация: базовые текстовые колонки хранятся на языке по умолчанию (ru), переводы лежат
+// в JSON-колонке i18n вида { "en": { "title": "…" } }. Схему JSON валидирует Zod на границе API.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Перечисления ────────────────────────────────────────────────────────────
+
+enum ProductCategory {
+  CPU
+  MEMORY
+  GPU
+  MOTHERBOARD
+}
+
+enum ProductStatus {
+  AVAILABLE
+  COMING_SOON
+  PREVIEW
+}
+
+enum CompareDirection {
+  HIGHER_BETTER
+  LOWER_BETTER
+  NONE
+}
+
+enum CompatibilityLevel {
+  SUPPORTED
+  VALIDATING
+}
+
+enum ModelPreset {
+  CPU_SP5
+  CPU_SP7
+  RDIMM
+  GPU_DUAL_SLOT
+  MOTHERBOARD
+}
+
+enum HotspotVisibility {
+  ALWAYS
+  ASSEMBLED
+  EXPLODED
+}
+
+enum AssetType {
+  GLB
+  IMAGE
+  VIDEO
+  HDRI
+}
+
+enum AssetVariant {
+  DESKTOP
+  MOBILE
+}
+
+enum AssetStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
+/// QUOTE — запрос КП, INFO — только информация (единственный вариант для PREVIEW)
+enum LeadIntent {
+  QUOTE
+  INFO
+}
+
+enum AdminRole {
+  ADMIN
+  EDITOR
+}
+
+// ─── Каталог ─────────────────────────────────────────────────────────────────
+
+model Product {
+  id                 String          @id @default(uuid(7)) @db.Uuid
+  slug               String          @unique
+  name               String
+  brand              String
+  category           ProductCategory
+  codename           String?
+  /// «The New Era» — одинаково во всех локалях
+  headline           String
+  /// Слоган
+  tagline            String
+  description        String
+  status             ProductStatus
+  /// Короткое окно для бейджа: «Q4 2026»
+  availabilityWindow String?
+  availabilityNote   String?
+  /// #rrggbb — свет в сцене, градиенты, цифры
+  accentColor        String
+  /// Второй цвет градиента (у Venice)
+  accentColorAlt     String?
+  /// Процедурная модель, пока не загружен GLB
+  modelPreset        ModelPreset
+  modelAssetId       String?         @db.Uuid
+  heroImageId        String?         @db.Uuid
+  sortOrder          Int             @default(0)
+  /// null — черновик, не виден в публичном API
+  publishedAt        DateTime?
+  i18n               Json            @default("{}")
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  modelAsset    Asset?          @relation("ProductModel", fields: [modelAssetId], references: [id], onDelete: SetNull)
+  heroImage     Asset?          @relation("ProductHero", fields: [heroImageId], references: [id], onDelete: SetNull)
+  specGroups    SpecGroup[]
+  specs         Spec[]
+  hotspots      Hotspot[]
+  compatibility Compatibility[]
+
+  @@index([category, status])
+  @@index([publishedAt, sortOrder])
+}
+
+model SpecGroup {
+  id        String @id @default(uuid(7)) @db.Uuid
+  productId String @db.Uuid
+  /// compute | cache | memory | power | io | silicon | …
+  key       String
+  title     String
+  order     Int    @default(0)
+  i18n      Json   @default("{}")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  specs   Spec[]
+
+  @@unique([productId, key])
+  @@index([productId, order])
+}
+
+model Spec {
+  id               String           @id @default(uuid(7)) @db.Uuid
+  /// Денормализация для уникальности ключа в пределах продукта и быстрого /compare
+  productId        String           @db.Uuid
+  groupId          String           @db.Uuid
+  /// Ключ из реестра SPEC_KEYS (@apex/contracts) или произвольный из админки
+  key              String
+  label            String
+  /// Готовая строка для отображения
+  value            String
+  /// Число в каноничной единице — для счётчиков и сравнения
+  numericValue     Float?
+  unit             String?
+  highlight        Boolean          @default(false)
+  compareDirection CompareDirection @default(NONE)
+  /// Сноска: условия измерения, источник
+  note             String?
+  order            Int              @default(0)
+  i18n             Json             @default("{}")
+
+  product Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  group   SpecGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, key])
+  @@index([groupId, order])
+  @@index([key])
+}
+
+model Hotspot {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  productId      String            @db.Uuid
+  key            String
+  /// Имя узла модели; одинаково в процедурной модели и GLB, поэтому хотспоты переживают замену модели
+  anchorNode     String?
+  /// [x, y, z] в пространстве модели
+  position       Json
+  /// Куда подлетает камера
+  cameraPosition Json
+  /// Куда смотрит камера; null — на position
+  cameraTarget   Json?
+  visibility     HotspotVisibility @default(ALWAYS)
+  title          String
+  body           String
+  order          Int               @default(0)
+  i18n           Json              @default("{}")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, key])
+  @@index([productId, order])
+}
+
+model Asset {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  type       AssetType
+  variant    AssetVariant @default(DESKTOP)
+  status     AssetStatus  @default(PENDING)
+  /// Ключ объекта в S3
+  storageKey String       @unique
+  url        String
+  cdnUrl     String?
+  mimeType   String
+  /// Заполняются воркером после обработки
+  sizeBytes  Int?
+  /// sha256
+  checksum   String?
+  /// Треугольники, габариты, размеры изображения, ошибки обработки
+  meta       Json         @default("{}")
+  /// Исходник, из которого получен вариант (мобильная модель, превью-рендер)
+  sourceId   String?      @db.Uuid
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  source   Asset?    @relation("AssetVariants", fields: [sourceId], references: [id], onDelete: Cascade)
+  variants Asset[]   @relation("AssetVariants")
+  modelFor Product[] @relation("ProductModel")
+  heroFor  Product[] @relation("ProductHero")
+
+  @@index([type, status])
+  @@index([sourceId])
+}
+
+// ─── Платформы и совместимость ───────────────────────────────────────────────
+
+model Platform {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  /// SP5, SP7, … — строка, чтобы новые платформы добавлялись без миграции
+  socket             String        @unique
+  name               String
+  cpuFamily          String
+  memoryChannels     Int
+  /// null — производитель ещё не объявил
+  dimmsPerChannel    Int?
+  maxMemorySpeedMts  Int
+  maxMrdimmSpeedMts  Int?
+  pcieGen            Int
+  pcieLanes1P        Int
+  pcieLanes2P        Int?
+  cxlVersion         String?
+  maxSockets         Int
+  maxCpuTdpW         Int
+  status             ProductStatus
+  availabilityWindow String?
+  availabilityNote   String?
+  sortOrder          Int           @default(0)
+  i18n               Json          @default("{}")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  compatibility Compatibility[]
+  motherboards  Motherboard[]
+}
+
+model Compatibility {
+  productId  String             @db.Uuid
+  platformId String             @db.Uuid
+  level      CompatibilityLevel @default(SUPPORTED)
+  notes      String?
+  i18n       Json               @default("{}")
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([productId, platformId])
+  @@index([platformId])
+}
+
+model Motherboard {
+  id                 String        @id @default(uuid(7)) @db.Uuid
+  vendor             String
+  model              String
+  platformId         String        @db.Uuid
+  formFactor         String
+  sockets            Int
+  dimmSlots          Int
+  /// По спецификации платы; null — не указан
+  maxMemoryGb        Int?
+  /// Максимальный TDP процессора на сокет; null — не указан
+  maxCpuTdpW         Int?
+  pcieX16Slots       Int?
+  /// Два MCIO x8 через кабельный райзер дают один x16
+  mcioX8Ports        Int?
+  features           String[]
+  status             ProductStatus
+  availabilityWindow String?
+  /// Место под ещё не анонсированную плату: движок проверяет только лимиты платформы
+  isPlaceholder      Boolean       @default(false)
+  sourceUrl          String?
+  note               String?
+  sortOrder          Int           @default(0)
+  i18n               Json          @default("{}")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Restrict)
+
+  @@unique([vendor, model])
+  @@index([platformId, sortOrder])
+}
+
+// ─── Конфигуратор и заявки ───────────────────────────────────────────────────
+
+model Configuration {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  /// Короткий код для ссылки /configurator?c=…
+  shareCode     String   @unique
+  /// ConfigurationPayload из @apex/contracts
+  payload       Json
+  /// ConfigurationTotals на момент сохранения
+  totals        Json
+  schemaVersion Int      @default(1)
+  createdAt     DateTime @default(now())
+
+  leads Lead[]
+}
+
+model Lead {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  name            String
+  company         String?
+  email           String
+  phone           String?
+  message         String?
+  intent          LeadIntent
+  productSlug     String?
+  configurationId String?    @db.Uuid
+  status          LeadStatus @default(NEW)
+  /// Откуда пришла заявка: product | compare | configurator | request
+  source          String
+  locale          String     @default("ru")
+  /// Хеш IP с солью — для антиспама без хранения самого адреса
+  ipHash          String?
+  userAgent       String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  configuration Configuration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+  comments      LeadComment[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model LeadComment {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  leadId    String   @db.Uuid
+  authorId  String?  @db.Uuid
+  body      String
+  createdAt DateTime @default(now())
+
+  lead   Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author AdminUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt])
+}
+
+// ─── Админка ─────────────────────────────────────────────────────────────────
+
+model AdminUser {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  /// Хранится в нижнем регистре
+  email         String    @unique
+  /// argon2id
+  passwordHash  String
+  role          AdminRole @default(EDITOR)
+  /// Секрет TOTP, зашифрован на уровне приложения (AES-256-GCM, ключ TOTP_ENCRYPTION_KEY)
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions     AdminSession[]
+  auditLogs    AuditLog[]
+  leadComments LeadComment[]
+}
+
+model AdminSession {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @db.Uuid
+  /// sha256 токена из httpOnly cookie; сам токен не хранится
+  tokenHash String   @unique
+  /// Сессия прошла второй фактор
+  mfaPassed Boolean  @default(false)
+  expiresAt DateTime
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  /// null — системное действие (воркер, сид)
+  userId    String?  @db.Uuid
+  /// product.update, lead.status, asset.upload, …
+  action    String
+  entity    String
+  entityId  String
+  /// { before, after } только по изменённым полям
+  diff      Json
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}

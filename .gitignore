@@ -1,0 +1,23 @@
+node_modules/
+.pnpm-store/
+dist/
+.next/
+out/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# Сгенерированный Prisma Client
+apps/api/src/generated/
+
+# Окружение
+.env
+.env.*
+!.env.example
+
+# ОС / редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

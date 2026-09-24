@@ -1,0 +1,27 @@
+{
+  "name": "apex-compute",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down",
+    "db:generate": "pnpm --filter @apex/api db:generate",
+    "db:migrate": "pnpm --filter @apex/api db:migrate",
+    "db:seed": "pnpm --filter @apex/api db:seed",
+    "db:studio": "pnpm --filter @apex/api db:studio",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.3",
+    "typescript": "~6.0.3"
+  }
+}
