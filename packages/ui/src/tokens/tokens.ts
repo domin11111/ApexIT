@@ -80,8 +80,8 @@ export const typography = {
     mono: "var(--ff-jetbrains, 'JetBrains Mono'), ui-monospace, 'SF Mono', Consolas, monospace",
   },
   size: {
-    /** До 160px на десктопе */
-    hero: 'clamp(3.5rem, 12vw, 10rem)',
+    /** До 160px на больших экранах; ограничен и высотой, чтобы на ноутбуках оставалось место экспонату */
+    hero: 'clamp(3.5rem, min(10vw, 13vh), 10rem)',
     display: 'clamp(2.75rem, 7vw, 6rem)',
     h1: 'clamp(2.25rem, 4.5vw, 4rem)',
     h2: 'clamp(1.75rem, 3vw, 2.75rem)',
@@ -186,8 +186,11 @@ export const scene = {
     serverRoom: { environmentIntensity: 0.35, key: 2.0, fill: 0.4, rim: 3.2, tint: '#9ecbff' },
     neon: { environmentIntensity: 0.2, key: 1.2, fill: 0.2, rim: 5.0, tint: '#ff4fd8' },
   },
-  /** Selective bloom: светятся только «дорожки» и эмиссивные элементы */
-  bloom: { intensity: 1.1, luminanceThreshold: 0.9, luminanceSmoothing: 0.2, mipmapBlur: true },
+  /**
+   * Selective bloom по яркости: порог 1 в HDR-буфере — светятся только эмиссивные элементы
+   * с toneMapped: false (дорожки, импульсы, кристаллы), а блики на металле — нет.
+   */
+  bloom: { intensity: 1.15, luminanceThreshold: 1, luminanceSmoothing: 0.25, mipmapBlur: true },
 } as const;
 
 export type LightingPreset = keyof typeof scene.lighting;

@@ -4,21 +4,28 @@
   "globalDependencies": [".env"],
   "globalEnv": ["NODE_ENV"],
   "tasks": {
+    // Пакеты отдают TS-исходники без сборки: transit протягивает хэши зависимостей,
+    // чтобы правка в @apex/contracts сбрасывала кэш проверок во всех зависимых пакетах
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "db:generate": {
       "inputs": ["prisma/schema.prisma", "prisma.config.ts"],
       "outputs": ["src/generated/**"],
       "passThroughEnv": ["DATABASE_URL"]
     },
     "build": {
-      "dependsOn": ["^build", "db:generate"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "dependsOn": ["^build", "transit", "db:generate"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "!.next/dev/**"]
     },
     "typecheck": {
-      "dependsOn": ["db:generate"]
+      "dependsOn": ["transit", "db:generate"]
     },
-    "lint": {},
+    "lint": {
+      "dependsOn": ["transit"]
+    },
     "test": {
-      "dependsOn": ["db:generate"],
+      "dependsOn": ["transit", "db:generate"],
       "outputs": []
     },
     "dev": {

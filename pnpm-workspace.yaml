@@ -9,9 +9,13 @@ onlyBuiltDependencies:
   - esbuild
 
 # Скрипты не нужны: нативные ускорители Testcontainers (ssh2/cpu-features) опциональны,
-# worker MSW для браузера кладётся в apps/web командой `msw init`.
+# у @swc/core, @parcel/watcher и unrs-resolver есть готовые бинарники в optionalDependencies,
+# worker MSW для браузера кладётся в apps/web/public командой `msw init`.
 ignoredBuiltDependencies:
   - cpu-features
   - ssh2
   - protobufjs
   - msw
+  - "@swc/core"
+  - "@parcel/watcher"
+  - unrs-resolver

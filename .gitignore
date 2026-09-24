@@ -7,8 +7,9 @@ coverage/
 .turbo/
 *.tsbuildinfo
 
-# Сгенерированный Prisma Client
+# Сгенерированный Prisma Client и типы Next
 apps/api/src/generated/
+next-env.d.ts
 
 # Окружение
 .env

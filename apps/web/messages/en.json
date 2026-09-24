@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "title": "APEX // Compute Collection 2026",
+    "description": "The premiere of 2026's flagship server hardware: AMD EPYC 9996 “Venice”, AMD EPYC 9965, Micron 512GB DDR5 RDIMM and NVIDIA RTX PRO 6000 Blackwell."
+  },
+  "nav": {
+    "skip": "Skip to content",
+    "home": "APEX — home",
+    "primary": "Main navigation",
+    "collection": "Collection",
+    "compare": "Compare",
+    "configurator": "Configurator",
+    "request": "Request a quote"
+  },
+  "locale": {
+    "label": "Language",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "preloader": {
+    "label": "Loading the collection"
+  },
+  "hero": {
+    "eyebrow": "APEX // Server collection",
+    "titleLine1": "The Compute",
+    "titleLine2": "Collection 2026",
+    "subtitle": "Four flagships setting the bar for next-generation data centers: processors, memory and graphics — shown like exhibits in a dark gallery.",
+    "featured": "In the spotlight",
+    "scroll": "Scroll"
+  },
+  "teaser": {
+    "eyebrow": "Scene 2 · coming soon",
+    "title": "8 chiplets. 32 cores in each.",
+    "body": "Next, the lid lifts and we look inside Venice. This scene arrives in the next stage."
+  },
+  "fallback": {
+    "webgl": "Your browser doesn’t support WebGL — showing a static view."
+  },
+  "notFound": {
+    "title": "This exhibit isn’t in the gallery",
+    "body": "The page is still being prepared or has moved.",
+    "back": "Back to the collection"
+  },
+  "lab": {
+    "title": "Model lab",
+    "preset": "Model",
+    "explode": "Explode",
+    "glow": "Glow",
+    "spin": "Fans",
+    "lighting": "Lighting",
+    "nodes": "Hotspot nodes"
+  }
+}

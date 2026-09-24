@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LEAD_INTENTS, PRODUCT_STATUSES } from './status';
 
 /*
  * Перечисления — общие для фронта, API и БД.
@@ -9,7 +10,7 @@ import { z } from 'zod';
 export const ProductCategory = z.enum(['CPU', 'MEMORY', 'GPU', 'MOTHERBOARD']);
 export type ProductCategory = z.infer<typeof ProductCategory>;
 
-export const ProductStatus = z.enum(['AVAILABLE', 'COMING_SOON', 'PREVIEW']);
+export const ProductStatus = z.enum(PRODUCT_STATUSES);
 export type ProductStatus = z.infer<typeof ProductStatus>;
 
 export const CompareDirection = z.enum(['HIGHER_BETTER', 'LOWER_BETTER', 'NONE']);
@@ -47,55 +48,9 @@ export type LeadStatus = z.infer<typeof LeadStatus>;
 export const AdminRole = z.enum(['ADMIN', 'EDITOR']);
 export type AdminRole = z.infer<typeof AdminRole>;
 
-// ─── Бейджи статуса ──────────────────────────────────────────────────────────
+// ─── Бейджи статуса и намерения заявки (без Zod — см. status.ts) ─────────────
 
-/** Что может сделать посетитель: запросить КП или только информацию (для PREVIEW). */
-export const LeadIntent = z.enum(['QUOTE', 'INFO']);
+export const LeadIntent = z.enum(LEAD_INTENTS);
 export type LeadIntent = z.infer<typeof LeadIntent>;
 
-type StatusMeta = {
-  /** `{window}` подставляется из Product.availabilityWindow, например «Q4 2026» */
-  badge: { ru: string; en: string };
-  badgeWithoutWindow: { ru: string; en: string };
-  /** Ключ цвета — совпадает с --badge-* в @apex/ui/tokens.css */
-  tone: 'available' | 'coming' | 'preview';
-  /** Допустимые намерения заявки */
-  intents: readonly LeadIntent[];
-};
-
-export const STATUS_META = {
-  AVAILABLE: {
-    badge: { ru: 'Доступен', en: 'Available' },
-    badgeWithoutWindow: { ru: 'Доступен', en: 'Available' },
-    tone: 'available',
-    intents: ['QUOTE', 'INFO'],
-  },
-  COMING_SOON: {
-    badge: { ru: 'Ожидается · {window}', en: 'Coming {window}' },
-    badgeWithoutWindow: { ru: 'Скоро', en: 'Coming soon' },
-    tone: 'coming',
-    intents: ['QUOTE', 'INFO'],
-  },
-  PREVIEW: {
-    badge: { ru: 'Превью', en: 'Preview' },
-    badgeWithoutWindow: { ru: 'Превью', en: 'Preview' },
-    tone: 'preview',
-    // Правило B3: PREVIEW нельзя «заказать» — только запросить информацию.
-    intents: ['INFO'],
-  },
-} as const satisfies Record<ProductStatus, StatusMeta>;
-
-export function statusBadge(
-  status: ProductStatus,
-  locale: 'ru' | 'en',
-  availabilityWindow?: string | null,
-): string {
-  const meta = STATUS_META[status];
-  return availabilityWindow
-    ? meta.badge[locale].replace('{window}', availabilityWindow)
-    : meta.badgeWithoutWindow[locale];
-}
-
-export function isOrderable(status: ProductStatus): boolean {
-  return (STATUS_META[status].intents as readonly LeadIntent[]).includes('QUOTE');
-}
+export { isOrderable, STATUS_META, statusBadge } from './status';

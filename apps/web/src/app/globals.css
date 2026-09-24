@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+@import '@apex/ui/tokens.css';
+
+@layer base {
+  html {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--ff-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100svh;
+    background: var(--bg-void);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--ff-display);
+    font-weight: var(--fw-heading);
+    letter-spacing: var(--ls-heading);
+    /* Inter подбирает дисплейное начертание по кеглю (ось opsz) */
+    font-optical-sizing: auto;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 45%, transparent);
+    color: var(--text-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: var(--corner-sm);
+  }
+
+  /* Собственный курсор: системный прячем только на устройствах с точным указателем */
+  html[data-cursor='custom'],
+  html[data-cursor='custom'] * {
+    cursor: none;
+  }
+  html[data-cursor='custom'] :is(input, textarea, [contenteditable='true']) {
+    cursor: text;
+  }
+}
+
+@layer components {
+  /* Стеклянная панель с тонкой градиентной рамкой */
+  .glass {
+    position: relative;
+    background: var(--bg-glass);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: var(--corner-lg);
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--border-gradient);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Градиент акцента для крупных цифр и заголовков (мелкий текст — только solid, см. токены) */
+  .text-accent-gradient {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-alt) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .eyebrow {
+    font-family: var(--ff-mono);
+    font-size: var(--fs-caption);
+    letter-spacing: var(--ls-caption);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+}
+
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-3%, 2%); }
+  50% { transform: translate(2%, -3%); }
+  75% { transform: translate(-2%, -1%); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes scroll-cue {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

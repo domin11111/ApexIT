@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
-export const LOCALES = ['ru', 'en'] as const;
+import { LOCALES } from './locales';
+
+export { DEFAULT_LOCALE, LOCALES } from './locales';
 export const Locale = z.enum(LOCALES);
 export type Locale = z.infer<typeof Locale>;
-export const DEFAULT_LOCALE: Locale = 'ru';
 
 export const Slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Только a-z, 0-9 и дефисы');
 
