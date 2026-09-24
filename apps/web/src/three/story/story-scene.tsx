@@ -11,7 +11,7 @@ import { BOARD_Y, direct, type ActorPose, type StoryPose, type Vec3 } from '@/st
 import { createMaterialKit } from '../models/materials';
 import { BOARD, buildRdimmSimple, type ModelIdentity } from '../models/procedural';
 import { buildBoard } from '../models/procedural/board';
-import { ProductModel } from '../models/product-model';
+import { ProductModel, type ModelSource } from '../models/product-model';
 import { applyRig, collectRig, createRigControls, disposeModel } from '../models/rig';
 import { LightBeam } from '../stage/beam';
 import { DataStream } from '../stage/data-stream';
@@ -20,7 +20,7 @@ import { StudioLights } from '../stage/lights';
 import { Podium } from '../stage/podium';
 import { TraceField } from '../stage/trace-field';
 
-export type StoryModel = { preset: ModelPreset; accent: string; accentAlt: string | null; identity: ModelIdentity };
+export type StoryModel = { preset: ModelPreset; accent: string; accentAlt: string | null; identity: ModelIdentity; source?: ModelSource };
 export type StoryModels = { venice: StoryModel; turin: StoryModel; memory: StoryModel; gpu: StoryModel };
 
 const GHOST_X = [-2.25, -0.75, 0.75, 2.25];

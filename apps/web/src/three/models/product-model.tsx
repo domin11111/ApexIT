@@ -3,7 +3,7 @@
 import type { ModelPreset } from '@apex/contracts';
 import { useGLTF } from '@react-three/drei';
 import { useFrame, type ThreeElements } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Object3D } from 'three';
 import { prepareGlb, type ModelManifest } from './glb';
 import { buildProceduralModel, type ModelIdentity } from './procedural';
@@ -11,7 +11,11 @@ import { applyRig, collectRig, disposeModel, type RigControls } from './rig';
 
 type GroupProps = ThreeElements['group'];
 
-export type ModelSource = { url: string; manifest?: ModelManifest };
+/** GLB-модель: url — десктопная, mobileUrl — облегчённая (текстуры до 1024 px) для телефонов и планшетов. */
+export type ModelSource = { url: string; mobileUrl?: string; manifest?: ModelManifest };
+
+/** Тот же критерий, что и у качества рендера: сенсорный экран или узкое окно — мобильный вариант. */
+const CONSTRAINED = '(pointer: coarse), (max-width: 767px)';
 
 type ProductModelProps = GroupProps & {
   preset: ModelPreset;
@@ -62,8 +66,10 @@ function GlbModel({
   onRoot,
   ...group
 }: GroupProps & { source: ModelSource; controls: RigControls; onRoot?: (root: Object3D) => void }) {
-  // true, true — декодеры Draco и Meshopt (модели сжимает пайплайн загрузки, этап 7)
-  const { scene } = useGLTF(source.url, true, true);
+  // Вариант выбирается один раз: смена ориентации или окна не должна перезагружать модель
+  const [url] = useState(() => (source.mobileUrl && window.matchMedia(CONSTRAINED).matches ? source.mobileUrl : source.url));
+  // true, true — декодеры Draco и Meshopt (модели из tools/blender сжаты Meshopt)
+  const { scene } = useGLTF(url, true, true);
   const root = useMemo(() => prepareGlb(scene, source.manifest), [scene, source.manifest]);
   return <RiggedObject root={root} controls={controls} onRoot={onRoot} {...group} />;
 }

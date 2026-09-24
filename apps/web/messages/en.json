@@ -42,6 +42,7 @@
     "explode": "Explode",
     "glow": "Glow",
     "spin": "Fans",
+    "glb": "GLB model",
     "lighting": "Lighting",
     "nodes": "Hotspot nodes"
   },

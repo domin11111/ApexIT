@@ -4,13 +4,13 @@ import type { HotspotDto, ModelPreset } from '@apex/contracts';
 import { scene, type LightingPreset } from '@apex/ui/tokens';
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Color, Vector3, type Object3D } from 'three';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
 import { gsap } from '@/lib/gsap';
 import type { Quality } from '@/stores/experience';
 import type { ModelIdentity } from '../models/procedural';
-import { ProductModel } from '../models/product-model';
+import { ProductModel, type ModelSource } from '../models/product-model';
 import { createRigControls } from '../models/rig';
 import { StudioLights } from '../stage/lights';
 import { LoadBridge } from '../stage/load-bridge';
@@ -29,7 +29,7 @@ const OVERVIEW: Record<ModelPreset, { position: Vec3; target: Vec3 }> = {
 };
 
 export type ViewerProps = {
-  model: { preset: ModelPreset; accent: string; identity: ModelIdentity };
+  model: { preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource };
   hotspots: HotspotDto[];
   exploded: boolean;
   lighting: LightingPreset;
@@ -231,7 +231,10 @@ function ViewerScene({ model, hotspots, exploded, lighting, activeHotspot, reset
         onStart={onStart}
         onEnd={onEnd}
       />
-      <ProductModel {...model} controls={controls} onRoot={onRoot} />
+      {/* GLB грузится асинхронно: свет и камера работают сразу, модель появляется по готовности */}
+      <Suspense fallback={null}>
+        <ProductModel {...model} controls={controls} onRoot={onRoot} />
+      </Suspense>
     </>
   );
 }

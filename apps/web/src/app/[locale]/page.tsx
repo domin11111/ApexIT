@@ -13,14 +13,17 @@ import { StoryRail } from '@/components/story/story-rail';
 import { StoryScroll } from '@/components/story/story-scroll';
 import type { routing } from '@/i18n/routing';
 import { getCompare, getProduct, getProducts } from '@/lib/catalog';
-import { toBars, toStoryProduct, type StoryData, type StoryProduct } from '@/story/data';
+import { modelSource } from '@/lib/model-source';
+import { toBars, toStoryProduct, type StoryData } from '@/story/data';
 import type { StoryModel } from '@/three/story/story-scene';
+import type { ProductDetailDto } from '@apex/contracts';
 
-const model = (p: StoryProduct): StoryModel => ({
+const model = (p: ProductDetailDto): StoryModel => ({
   preset: p.modelPreset,
   accent: p.accentColor,
   accentAlt: p.accentColorAlt,
   identity: { brand: p.brand, name: p.name, codename: p.codename },
+  source: modelSource(p.models),
 });
 
 /** Главная-презентация: скролл-сторителлинг из семи сцен над единой WebGL-сценой. */
@@ -52,7 +55,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       <StoryScroll />
       <StoryRail />
       <ExperienceSlot
-        models={{ venice: model(data.venice), turin: model(data.turin), memory: model(data.memory), gpu: model(data.gpu) }}
+        models={{ venice: model(venice), turin: model(turin), memory: model(memory), gpu: model(gpu) }}
       />
       <HeroSection
         locale={locale}

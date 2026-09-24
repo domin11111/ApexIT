@@ -60,13 +60,19 @@ export const HotspotDto = z
   .meta({ id: 'Hotspot' });
 export type HotspotDto = z.infer<typeof HotspotDto>;
 
+/**
+ * Адрес ассета: абсолютный URL (CDN, хранилище) или путь от корня сайта — статика из apps/web/public,
+ * например модели из tools/blender (/models/*.glb). Протокол-относительные «//host» не допускаются.
+ */
+export const AssetUrl = z.union([z.url(), z.string().regex(/^\/(?!\/)[\w\-./]+$/)]);
+
 export const AssetDto = z
   .object({
     id: z.uuid(),
     type: AssetType,
     variant: AssetVariant,
-    /** CDN-адрес, если есть, иначе адрес в хранилище */
-    url: z.url(),
+    /** CDN-адрес, если есть, иначе адрес в хранилище или путь статики сайта */
+    url: AssetUrl,
     mimeType: z.string(),
     sizeBytes: z.number().int().nullable(),
     /** Треугольники, габариты, размеры изображения и т. п. */

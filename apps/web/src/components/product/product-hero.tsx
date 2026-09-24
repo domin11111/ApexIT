@@ -10,6 +10,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { Link } from '@/i18n/navigation';
 import { useExperience } from '@/stores/experience';
 import { Magnetic } from '../ui/magnetic';
+import type { ModelSource } from '@/three/models/product-model';
 import { StatusBadge } from '../ui/status-badge';
 
 const ProductViewer = dynamic(() => import('@/three/viewer/product-viewer'), { ssr: false });
@@ -27,6 +28,8 @@ export type ProductHeroData = {
   availabilityNote: string | null;
   accentColor: string;
   modelPreset: ModelPreset;
+  /** GLB-модель; нет — процедурная по modelPreset */
+  modelSource?: ModelSource;
   hotspots: HotspotDto[];
   highlights: Array<{ key: string; label: string; value: string }>;
 };
@@ -98,7 +101,12 @@ export function ProductHero({ product, locale }: { product: ProductHeroData; loc
         <div className="relative h-[52svh] min-h-[340px] overflow-hidden rounded-xl border border-line sm:h-[58svh] sm:min-h-[380px] lg:h-[78vh]">
           {webgl !== 'unsupported' && (
             <ProductViewer
-              model={{ preset: product.modelPreset, accent: product.accentColor, identity: { brand: product.brand, name: product.name, codename: product.codename } }}
+              model={{
+                preset: product.modelPreset,
+                accent: product.accentColor,
+                identity: { brand: product.brand, name: product.name, codename: product.codename },
+                source: product.modelSource,
+              }}
               hotspots={product.hotspots}
               exploded={exploded}
               lighting={lighting}

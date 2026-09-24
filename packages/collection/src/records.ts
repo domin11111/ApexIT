@@ -1,6 +1,6 @@
 import { specKeyMeta } from '@apex/contracts';
-import type { MotherboardRecord, PlatformRecord, ProductRecord } from '@apex/domain';
-import type { L10n } from './schema';
+import type { AssetRecord, MotherboardRecord, PlatformRecord, ProductRecord } from '@apex/domain';
+import type { L10n, SeedModel } from './schema';
 import { loadCollection, type Collection } from './validate';
 
 /*
@@ -44,6 +44,25 @@ function en(fields: Record<string, L10n | undefined>): { en: Record<string, stri
   return { en: result };
 }
 
+/** GLB продукта → ассет DESKTOP с мобильным вариантом (тот же путь с суффиксом -mobile). */
+function modelAsset(model: SeedModel): AssetRecord & { variants: AssetRecord[] } {
+  const glb = (url: string, variant: AssetRecord['variant'], sizeBytes: number): AssetRecord => ({
+    id: stableUuid(`asset:${url}`),
+    type: 'GLB',
+    variant,
+    status: 'READY',
+    url,
+    cdnUrl: null,
+    mimeType: 'model/gltf-binary',
+    sizeBytes,
+    meta: { triangles: model.triangles, generator: 'tools/blender' },
+  });
+  return {
+    ...glb(model.url, 'DESKTOP', model.sizeBytes),
+    variants: [glb(model.url.replace(/\.glb$/, '-mobile.glb'), 'MOBILE', model.mobileSizeBytes)],
+  };
+}
+
 export function buildCatalogRecords(collection: Collection = loadCollection()): CatalogRecords {
   const platforms: PlatformRecord[] = collection.platforms.map(
     ({ availabilityWindow, availabilityNote, ...platform }) => ({
@@ -76,7 +95,7 @@ export function buildCatalogRecords(collection: Collection = loadCollection()): 
     publishedAt: COLLECTION_PUBLISHED_AT,
     i18n: en({ tagline: product.tagline, description: product.description, availabilityNote: product.availabilityNote }),
     heroImage: null,
-    modelAsset: null,
+    modelAsset: product.model ? modelAsset(product.model) : null,
 
     specGroups: product.specGroups.map((group, groupOrder) => ({
       key: group.key,
