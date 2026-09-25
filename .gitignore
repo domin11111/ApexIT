@@ -30,3 +30,6 @@ Thumbs.db
 tools/blender/.deps/
 tools/blender/.build/
 __pycache__/
+
+# Отчёты Lighthouse (scripts/lighthouse.mjs)
+.lighthouse/

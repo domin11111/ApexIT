@@ -4,6 +4,7 @@ import { motion as tokens } from '@apex/ui/tokens';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
+import { usePathname } from '@/i18n/navigation';
 import { gsap, useGSAP } from '@/lib/gsap';
 import { useLenis } from '@/providers/smooth-scroll';
 import { useExperience } from '@/stores/experience';
@@ -13,11 +14,29 @@ import { LogoMark } from './logo-mark';
 const MIN_DRAW_MS = 800;
 
 /**
- * Прелоадер: тонкая линия-«дорожка» рисуется по кругу, счётчик показывает реальный прогресс
+ * Прелоадер — только у премьеры на главной. Остальные страницы открываются сразу:
+ * их первый экран — HTML и постер-рендер, 3D-сцена проявляется поверх по готовности.
+ */
+export function Preloader() {
+  const pathname = usePathname();
+  return pathname === '/' ? <PreloaderScreen /> : <SkipPreloader />;
+}
+
+/** Прямой заход не на главную: интро не нужно, сайт сразу «готов» (переходы шторкой и т. п.). */
+function SkipPreloader() {
+  useEffect(() => {
+    const { phase, setPhase } = useExperience.getState();
+    if (phase !== 'ready') setPhase('ready');
+  }, []);
+  return null;
+}
+
+/**
+ * Экран прелоадера: тонкая линия-«дорожка» рисуется по кругу, счётчик показывает реальный прогресс
  * загрузки 3D-ассетов → кольцо превращается в логотип коллекции → шторка уходит вверх.
  * Не дольше 2,5 с: если ассеты ещё грузятся, сайт открывается с плейсхолдерами.
  */
-export function Preloader() {
+function PreloaderScreen() {
   const t = useTranslations('preloader');
   const phase = useExperience((s) => s.phase);
   const setPhase = useExperience((s) => s.setPhase);
@@ -27,6 +46,7 @@ export function Preloader() {
 
   // Премьера всегда начинается с hero: браузер не восстанавливает прежнюю позицию скролла
   useEffect(() => {
+    if (useExperience.getState().phase !== 'loading') return;
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
   }, []);
@@ -76,12 +96,13 @@ export function Preloader() {
       };
 
       const tick = () => {
-        const { sceneProgress, webgl } = useExperience.getState();
+        const { sceneProgress, sceneWarm, webgl } = useExperience.getState();
         const now = performance.now();
         const elapsed = now - started;
         const dt = (now - last) / 1000;
         last = now;
-        const loaded = webgl === 'unsupported' ? 1 : sceneProgress;
+        // Последние проценты — прогрев сцены: сеть уже всё отдала, но шейдеры ещё компилируются
+        const loaded = webgl === 'unsupported' || sceneWarm ? 1 : Math.min(sceneProgress, 0.92);
         // Выход должен успеть уложиться в 2,5 с — к этому моменту считаем загрузку завершённой
         const target = elapsed >= tokens.preloaderMaxMs - 1300 ? 1 : Math.min(loaded, elapsed / MIN_DRAW_MS);
         // Сглаживание по реальному времени: не зависит от частоты кадров (и троттлинга вкладки)

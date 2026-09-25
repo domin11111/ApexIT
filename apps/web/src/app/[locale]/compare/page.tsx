@@ -6,6 +6,7 @@ import { CompareStagePanel } from '@/components/compare/compare-stage-panel';
 import { CompareTable } from '@/components/compare/compare-table';
 import { RevealText } from '@/components/story/reveal-text';
 import type { routing } from '@/i18n/routing';
+import { alternatesFor } from '@/lib/site';
 import { getCompare, getProduct, getProducts } from '@/lib/catalog';
 import { resolveSelection } from '@/lib/compare-selection';
 import { modelSource } from '@/lib/model-source';
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/compare'
   return {
     title: t('metaTitle'),
     description: t('metaDescription'),
-    alternates: { canonical: locale === 'ru' ? '/compare' : '/en/compare', languages: { ru: '/compare', en: '/en/compare' } },
+    alternates: alternatesFor(locale, '/compare'),
   };
 }
 

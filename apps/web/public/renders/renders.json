@@ -1,0 +1,42 @@
+{
+  "epyc-9965-exploded": {
+    "width": 1600,
+    "height": 1200
+  },
+  "epyc-9965-hero": {
+    "width": 1600,
+    "height": 1200
+  },
+  "epyc-9996-venice-exploded": {
+    "width": 1600,
+    "height": 1200
+  },
+  "epyc-9996-venice-hero": {
+    "width": 1600,
+    "height": 1200
+  },
+  "micron-ddr5-512gb-rdimm-exploded": {
+    "width": 1600,
+    "height": 1200
+  },
+  "micron-ddr5-512gb-rdimm-hero": {
+    "width": 1600,
+    "height": 1200
+  },
+  "rtx-pro-6000-blackwell-exploded": {
+    "width": 1600,
+    "height": 1200
+  },
+  "rtx-pro-6000-blackwell-hero": {
+    "width": 1600,
+    "height": 1200
+  },
+  "board-sp7-hero": {
+    "width": 1600,
+    "height": 1200
+  },
+  "board-sp7-top": {
+    "width": 1600,
+    "height": 1200
+  }
+}

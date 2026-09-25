@@ -42,7 +42,10 @@ export function HeroSection({ product, locale }: { product: HeroProduct; locale:
         .timeline({ paused: true, defaults: { ease: motion.gsap.outExpo } })
         .from(split.chars, { yPercent: 115, duration: 1.3, stagger: motion.stagger.letters })
         .from('[data-year]', { yPercent: 115, duration: 1.3 }, 0.35)
-        .from('[data-fade]', { y: 24, autoAlpha: 0, duration: 1, stagger: 0.12 }, 0.5);
+        .from('[data-fade]', { y: 24, autoAlpha: 0, duration: 1, stagger: 0.12 }, 0.5)
+        // Подзаголовок — самый крупный текст первого экрана (кандидат LCP): только сдвиг, без прозрачности,
+        // чтобы браузер засчитал его отрисовку сразу, а не после прелоадера
+        .from('[data-rise]', { y: 24, duration: 1 }, 0.55);
 
       // Уход hero при скролле: текст поднимается и гаснет (3D-сцену ведёт режиссёр по StoryScroll)
       gsap.to('[data-hero-content]', {
@@ -99,7 +102,7 @@ export function HeroSection({ product, locale }: { product: HeroProduct; locale:
         </div>
 
         <div className="grid items-end gap-6 md:grid-cols-[1fr_auto_1fr]">
-          <p data-fade className="max-w-[26rem] text-body text-fg-secondary">
+          <p data-rise className="max-w-[26rem] text-body text-fg-secondary">
             {t('subtitle')}
           </p>
 

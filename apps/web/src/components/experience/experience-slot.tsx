@@ -2,21 +2,15 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
+import { useAfterLoad } from '@/hooks/use-after-load';
+import { useWebgl } from '@/hooks/use-webgl';
 import { useExperience, type Quality } from '@/stores/experience';
 import type { StoryModels } from '@/three/story/story-scene';
 import { StaticFallback } from './static-fallback';
+import { WebglBoundary } from './webgl-boundary';
 
 // three.js и сцена — отдельный чанк: не блокируют LCP (заголовок hero — обычный HTML)
 const HomeExperience = dynamic(() => import('@/three/home-experience'), { ssr: false });
-
-function detectWebGL(): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
 
 /** Потолок качества по устройству: телефоны и планшеты — без bloom (medium). */
 function deviceCeiling(): Quality {
@@ -25,17 +19,20 @@ function deviceCeiling(): Quality {
 }
 
 export function ExperienceSlot({ models }: { models: StoryModels }) {
-  const webgl = useExperience((s) => s.webgl);
-  const setWebgl = useExperience((s) => s.setWebgl);
+  const webgl = useWebgl();
+  // Чанк three.js (~1 МБ) запрашивается после первой отрисовки: hero-текст (LCP) не ждёт его загрузки
+  const mount = useAfterLoad();
   const setQuality = useExperience((s) => s.setQuality);
 
   useEffect(() => {
-    const supported = detectWebGL();
-    setWebgl(supported ? 'supported' : 'unsupported');
-    if (supported) setQuality(deviceCeiling());
-  }, [setWebgl, setQuality]);
+    if (webgl === 'supported') setQuality(deviceCeiling());
+  }, [webgl, setQuality]);
 
-  if (webgl === 'unsupported') return <StaticFallback accent={models.venice.accent} accentAlt={models.venice.accentAlt} />;
-  if (webgl === 'unknown') return null;
-  return <HomeExperience models={models} ceiling={deviceCeiling()} />;
+  if (webgl === 'unsupported') return <StaticFallback models={models} />;
+  if (webgl === 'unknown' || !mount) return null;
+  return (
+    <WebglBoundary>
+      <HomeExperience models={models} ceiling={deviceCeiling()} />
+    </WebglBoundary>
+  );
 }

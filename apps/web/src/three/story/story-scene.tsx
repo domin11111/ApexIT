@@ -18,9 +18,19 @@ import { Dust } from '../stage/dust';
 import { StudioLights } from '../stage/lights';
 import { Podium } from '../stage/podium';
 import { TraceField } from '../stage/trace-field';
+import { usesComposer } from '../stage/post-fx';
+import { Warmup } from '../stage/warmup';
 import { AssemblyBoard } from './assembly-board';
 
-export type StoryModel = { preset: ModelPreset; accent: string; accentAlt: string | null; identity: ModelIdentity; source?: ModelSource };
+export type StoryModel = {
+  /** slug продукта — ключ статичных рендеров (фолбэк без WebGL) */
+  slug: string;
+  preset: ModelPreset;
+  accent: string;
+  accentAlt: string | null;
+  identity: ModelIdentity;
+  source?: ModelSource;
+};
 export type StoryModels = { venice: StoryModel; turin: StoryModel; memory: StoryModel; gpu: StoryModel };
 
 const GHOST_X = [-2.25, -0.75, 0.75, 2.25];
@@ -202,7 +212,9 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
       {/* Плата сцены сборки грузится после прелоадера: первому экрану она не нужна */}
       {phase !== 'loading' && (
         <Suspense fallback={null}>
-          <AssemblyBoard accent={models.venice.accent} getPose={() => pose.current} />
+          <Warmup offscreen={usesComposer(quality)}>
+            <AssemblyBoard accent={models.venice.accent} getPose={() => pose.current} />
+          </Warmup>
         </Suspense>
       )}
     </>

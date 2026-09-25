@@ -318,7 +318,7 @@ function FloatingInput({
         className="pointer-events-none absolute left-4 right-4 top-2 truncate text-[0.75rem] tracking-normal text-fg-tertiary transition-all peer-placeholder-shown:top-[1.05rem] peer-placeholder-shown:text-small peer-focus:top-2 peer-focus:text-[0.75rem] peer-focus:text-accent"
       >
         {label}
-        {hint && <span className="ml-1.5 opacity-60">· {hint}</span>}
+        {hint && <span className="ml-1.5">· {hint}</span>}
       </label>
       {error && (
         <p id={`${id}-error`} className="mt-1.5 text-small text-[#ff6b61]">

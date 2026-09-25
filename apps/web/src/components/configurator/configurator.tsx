@@ -5,7 +5,9 @@ import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { Suspense, useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useAfterLoad } from '@/hooks/use-after-load';
 import { useMediaQuery, usePrefersReducedMotion } from '@/hooks/use-media-query';
+import { useWebgl } from '@/hooks/use-webgl';
 import { useRouter } from '@/i18n/navigation';
 import { apiFetch } from '@/lib/api-client';
 import {
@@ -25,9 +27,11 @@ import {
   type ConfiguratorCatalog,
 } from '@/lib/configurator-state';
 import { modelSource } from '@/lib/model-source';
-import { useExperience } from '@/stores/experience';
+import { renderFor } from '@/lib/renders';
 import type { SceneComponent } from '@/three/configurator/configurator-scene';
 import { RDIMM_FILLER_URL } from '@/three/models/fillers';
+import { RenderImage } from '../ui/render-image';
+import { WebglBoundary } from '../experience/webgl-boundary';
 import { StatusBadge } from '../ui/status-badge';
 import { CountStepper } from './count-stepper';
 import { SharedBuildLoader } from './shared-build-loader';
@@ -74,13 +78,10 @@ export function Configurator({ catalog, locale }: { catalog: ConfiguratorCatalog
 
   const reducedMotion = usePrefersReducedMotion();
   const quality = useMediaQuery('(pointer: coarse), (max-width: 767px)') ? 'medium' : 'high';
-  const webgl = useExperience((s) => s.webgl);
-  const setWebgl = useExperience((s) => s.setWebgl);
-  useEffect(() => {
-    if (useExperience.getState().webgl !== 'unknown') return;
-    const canvas = document.createElement('canvas');
-    setWebgl(canvas.getContext('webgl2') ?? canvas.getContext('webgl') ? 'supported' : 'unsupported');
-  }, [setWebgl]);
+  const webgl = useWebgl();
+  // До WebGL-сцены (и без неё) — рендер платы из Blender
+  const poster = renderFor('board-sp7');
+  const mountScene = useAfterLoad();
 
   const result = useMemo(() => evaluate(catalog, payload, locale), [catalog, payload, locale]);
   const limits = result.limits;
@@ -181,16 +182,27 @@ export function Configurator({ catalog, locale }: { catalog: ConfiguratorCatalog
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:items-start">
         {/* ── 3D-превью ─────────────────────────────────────────────────── */}
         <div className="relative h-[46svh] min-h-[320px] overflow-hidden rounded-xl border border-line lg:sticky lg:top-[calc(var(--layout-header-h)+1rem)] lg:h-[calc(100svh-var(--layout-header-h)-2rem)]">
-          {webgl !== 'unsupported' && (
-            <ConfiguratorScene
-              layout={sceneLayout}
-              accent={accent}
-              cpu={sceneComponent(cpu, payload.cpu.count)}
-              memory={sceneComponent(memory, payload.memory?.count ?? 0)}
-              gpu={sceneComponent(gpu, payload.gpu?.count ?? 0)}
-              quality={quality}
-              reducedMotion={reducedMotion}
+          {poster && (
+            <RenderImage
+              render={poster}
+              alt=""
+              sizes="(min-width: 1024px) 60vw, 100vw"
+              priority
+              className="absolute inset-0 size-full object-contain"
             />
+          )}
+          {webgl === 'supported' && mountScene && (
+            <WebglBoundary>
+              <ConfiguratorScene
+                layout={sceneLayout}
+                accent={accent}
+                cpu={sceneComponent(cpu, payload.cpu.count)}
+                memory={sceneComponent(memory, payload.memory?.count ?? 0)}
+                gpu={sceneComponent(gpu, payload.gpu?.count ?? 0)}
+                quality={quality}
+                reducedMotion={reducedMotion}
+              />
+            </WebglBoundary>
           )}
           <p className="pointer-events-none absolute left-4 top-4 font-mono text-caption uppercase tracking-caption text-fg-tertiary" aria-hidden>
             <span className="pointer-coarse:hidden">{t('viewerHint')}</span>

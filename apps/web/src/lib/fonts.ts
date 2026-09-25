@@ -12,6 +12,8 @@ export const inter = Inter({
   variable: '--ff-inter',
 });
 
+// Моноширинный тоже с preload: подписи первого экрана набраны им, и без preload запрос шрифта
+// встаёт в цепочку HTML → CSS → шрифт (FCP в мобильном профиле Lighthouse растёт на ~0,4 с)
 export const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
   display: 'swap',

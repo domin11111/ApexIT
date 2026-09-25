@@ -8,11 +8,16 @@ import { useEffect, useMemo } from 'react';
 import { ACESFilmicToneMapping, HalfFloatType, NoToneMapping, Vector2 } from 'three';
 import type { Quality } from '@/stores/experience';
 
+/** Композер постобработки нужен только на high: остальным уровням хватает рендерера и CSS. */
+export const usesComposer = (quality: Quality) => quality === 'high';
+
 /**
  * Постобработка. Рендер идёт в HDR-буфер (HalfFloat), тонмаппинг ACES — последним эффектом,
  * поэтому bloom видит «честные» значения > 1 и светятся только эмиссивные элементы.
  * high — bloom + хроматическая аберрация по краям + виньетка + SMAA;
- * medium — без bloom и аберрации (телефоны, просадка FPS); low — без постобработки.
+ * medium (телефоны, просадка FPS) и low — без композера: тонмаппинг делает рендерер, сглаживание —
+ * MSAA контекста, виньетка — CSS-слой (SceneVignette). Нет HalfFloat-буфера и лишних проходов,
+ * и первый кадр не ждёт компиляции шейдеров SMAA.
  */
 export function PostFx({ quality }: { quality: Quality }) {
   const gl = useThree((s) => s.gl);
@@ -20,23 +25,13 @@ export function PostFx({ quality }: { quality: Quality }) {
 
   useEffect(() => {
     // Без композера тонмаппинг делает сам рендерер
-    gl.toneMapping = quality === 'low' ? ACESFilmicToneMapping : NoToneMapping;
+    gl.toneMapping = usesComposer(quality) ? NoToneMapping : ACESFilmicToneMapping;
     return () => {
       gl.toneMapping = ACESFilmicToneMapping;
     };
   }, [gl, quality]);
 
-  if (quality === 'low') return null;
-
-  if (quality === 'medium') {
-    return (
-      <EffectComposer multisampling={0} frameBufferType={HalfFloatType} enableNormalPass={false}>
-        <Vignette offset={0.28} darkness={0.78} />
-        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-        <SMAA />
-      </EffectComposer>
-    );
-  }
+  if (!usesComposer(quality)) return null;
 
   return (
     <EffectComposer multisampling={0} frameBufferType={HalfFloatType} enableNormalPass={false}>

@@ -5,19 +5,21 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { RequestForm, type RequestProduct } from '@/components/request/request-form';
 import { RevealText } from '@/components/story/reveal-text';
 import type { routing } from '@/i18n/routing';
+import { alternatesFor } from '@/lib/site';
 import { getProducts } from '@/lib/catalog';
 
 type Locale = (typeof routing.locales)[number];
 
-export async function generateMetadata({ params }: PageProps<'/[locale]/request'>): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps<'/[locale]/request'>): Promise<Metadata> {
   const { locale } = (await params) as { locale: Locale };
+  const personalized = Object.keys(await searchParams).length > 0;
   const t = await getTranslations({ locale, namespace: 'request' });
   return {
     title: t('metaTitle'),
     description: t('metaDescription'),
-    alternates: { canonical: locale === 'ru' ? '/request' : '/en/request', languages: { ru: '/request', en: '/en/request' } },
-    // Форма с параметрами из ссылки — не для поисковой выдачи
-    robots: { index: false, follow: true },
+    alternates: alternatesFor(locale, '/request'),
+    // Форма с продуктом или сборкой из ссылки — не для выдачи; чистый /request индексируется
+    robots: { index: !personalized, follow: true },
   };
 }
 

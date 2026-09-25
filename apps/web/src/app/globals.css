@@ -3,12 +3,14 @@
 
 @layer base {
   html {
+    /* Место под полосу прокрутки всегда занято: блокировка скролла (прелоадер, модальные окна)
+       не меняет ширину окна — фиксированные слои не сдвигаются (CLS) */
+    scrollbar-gutter: stable;
     background: var(--bg-void);
     color: var(--text-primary);
     font-family: var(--ff-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
   }
 
   body {

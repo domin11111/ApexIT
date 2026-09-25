@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Configurator } from '@/components/configurator/configurator';
 import { RevealText } from '@/components/story/reveal-text';
 import type { routing } from '@/i18n/routing';
+import { alternatesFor } from '@/lib/site';
 import { getMotherboards, getPlatforms, getProduct, getProducts } from '@/lib/catalog';
 import type { ConfiguratorCatalog } from '@/lib/configurator-state';
 
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/configur
   return {
     title: t('metaTitle'),
     description: t('metaDescription'),
-    alternates: { canonical: locale === 'ru' ? '/configurator' : '/en/configurator', languages: { ru: '/configurator', en: '/en/configurator' } },
+    alternates: alternatesFor(locale, '/configurator'),
   };
 }
 

@@ -2,11 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
+import { useAfterLoad } from '@/hooks/use-after-load';
 import { useMediaQuery, usePrefersReducedMotion } from '@/hooks/use-media-query';
+import { useWebgl } from '@/hooks/use-webgl';
 import { Link } from '@/i18n/navigation';
-import { useExperience } from '@/stores/experience';
+import { renderFor } from '@/lib/renders';
 import type { CompareModel } from '@/three/compare/compare-stage';
+import { RenderImage } from '../ui/render-image';
+import { WebglBoundary } from '../experience/webgl-boundary';
 
 const CompareStage = dynamic(() => import('@/three/compare/compare-stage'), { ssr: false });
 
@@ -17,15 +21,9 @@ export function CompareStagePanel({ items }: { items: CompareItem[] }) {
   const t = useTranslations('compare');
   const reducedMotion = usePrefersReducedMotion();
   const quality = useMediaQuery('(pointer: coarse), (max-width: 767px)') ? 'medium' : 'high';
-  const webgl = useExperience((s) => s.webgl);
-  const setWebgl = useExperience((s) => s.setWebgl);
+  const webgl = useWebgl();
+  const mountStage = useAfterLoad();
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (useExperience.getState().webgl !== 'unknown') return;
-    const canvas = document.createElement('canvas');
-    setWebgl(canvas.getContext('webgl2') ?? canvas.getContext('webgl') ? 'supported' : 'unsupported');
-  }, [setWebgl]);
 
   const share = async () => {
     try {
@@ -40,12 +38,36 @@ export function CompareStagePanel({ items }: { items: CompareItem[] }) {
   return (
     <div>
       <div className="relative h-[42svh] min-h-[300px] overflow-hidden rounded-xl border border-line lg:h-[56vh]">
-        {webgl !== 'unsupported' && (
-          <CompareStage
-            models={items.map(({ slug, preset, accent, identity, source }) => ({ slug, preset, accent, identity, source }))}
-            quality={quality}
-            reducedMotion={reducedMotion}
-          />
+        {/* Постеры в колонках моделей: первый экран до WebGL и фолбэк без него */}
+        <div
+          aria-hidden
+          className="absolute inset-0 grid grid-cols-[repeat(var(--cols),minmax(0,1fr))] items-center gap-2 px-4"
+          style={{ '--cols': items.length } as CSSProperties}
+        >
+          {items.map((item) => {
+            const render = renderFor(item.slug);
+            return render ? (
+              <RenderImage
+                key={item.slug}
+                render={render}
+                alt=""
+                sizes={`(min-width: 1024px) ${Math.round(60 / items.length)}vw, ${Math.round(100 / items.length)}vw`}
+                priority
+                className="h-auto w-full"
+              />
+            ) : (
+              <span key={item.slug} />
+            );
+          })}
+        </div>
+        {webgl === 'supported' && mountStage && (
+          <WebglBoundary>
+            <CompareStage
+              models={items.map(({ slug, preset, accent, identity, source }) => ({ slug, preset, accent, identity, source }))}
+              quality={quality}
+              reducedMotion={reducedMotion}
+            />
+          </WebglBoundary>
         )}
         <p className="pointer-events-none absolute left-4 top-4 font-mono text-caption uppercase tracking-caption text-fg-tertiary" aria-hidden>
           {t('viewerHint')}

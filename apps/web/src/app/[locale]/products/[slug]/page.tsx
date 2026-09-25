@@ -8,6 +8,8 @@ import { SpecSection } from '@/components/product/spec-section';
 import type { routing } from '@/i18n/routing';
 import { getMotherboards, getProduct, getProducts } from '@/lib/catalog';
 import { modelSource } from '@/lib/model-source';
+import { JsonLd } from '@/components/seo/json-ld';
+import { absoluteUrl, alternatesFor, localizedPath } from '@/lib/site';
 
 type Locale = (typeof routing.locales)[number];
 type Params = { locale: Locale; slug: string };
@@ -25,11 +27,14 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/products
   return {
     title,
     description: `${product.tagline} ${product.description}`.slice(0, 300),
-    alternates: {
-      canonical: locale === 'ru' ? `/products/${slug}` : `/en/products/${slug}`,
-      languages: { ru: `/products/${slug}`, en: `/en/products/${slug}` },
+    alternates: alternatesFor(locale, `/products/${slug}`),
+    openGraph: {
+      title,
+      description: product.tagline,
+      type: 'website',
+      url: alternatesFor(locale, `/products/${slug}`).canonical,
     },
-    openGraph: { title, description: product.tagline, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description: product.tagline },
   };
 }
 
@@ -90,15 +95,30 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/produ
     : [];
 
   // ── Разметка для поисковиков ─────────────────────────────────────────────
+  const url = absoluteUrl(localizedPath(locale, `/products/${slug}`));
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: `${product.brand} ${product.name}`,
-    brand: { '@type': 'Brand', name: product.brand },
-    description: product.description,
-    sku: product.slug,
-    category: product.category,
-    additionalProperty: product.highlights.map((spec) => ({ '@type': 'PropertyValue', name: spec.label, value: spec.value })),
+    '@graph': [
+      {
+        '@type': 'Product',
+        '@id': `${url}#product`,
+        url,
+        name: `${product.brand} ${product.name}`,
+        brand: { '@type': 'Brand', name: product.brand },
+        description: product.description,
+        sku: product.slug,
+        category: product.category,
+        image: absoluteUrl(`/renders/${product.slug}-hero-1600.webp`),
+        additionalProperty: product.highlights.map((spec) => ({ '@type': 'PropertyValue', name: spec.label, value: spec.value })),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: t('breadcrumb'), item: absoluteUrl(localizedPath(locale, '/')) },
+          { '@type': 'ListItem', position: 2, name: `${product.brand} ${product.name}`, item: url },
+        ],
+      },
+    ],
   };
 
   return (
@@ -134,11 +154,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/produ
         related={related}
         subject={{ category: product.category, tdpW: numeric('cpu.tdp'), capacityGb: numeric('memory.capacity') }}
       />
-      <script
-        type="application/ld+json"
-        // Экранируем «<», чтобы строка из БД не могла закрыть тег script
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
-      />
+      <JsonLd data={jsonLd} />
     </main>
   );
 }

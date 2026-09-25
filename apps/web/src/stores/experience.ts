@@ -14,10 +14,13 @@ type ExperienceState = {
   phase: Phase;
   /** Прогресс загрузки 3D-ассетов, 0…1 (пишет сцена, читает прелоадер) */
   sceneProgress: number;
+  /** Сцена главной загружена и прогрета (шейдеры, текстуры) — первый кадр не подвесит интро */
+  sceneWarm: boolean;
   webgl: 'unknown' | 'supported' | 'unsupported';
   quality: Quality;
   setPhase: (phase: Phase) => void;
   setSceneProgress: (progress: number) => void;
+  setSceneWarm: (warm: boolean) => void;
   setWebgl: (webgl: ExperienceState['webgl']) => void;
   setQuality: (quality: Quality) => void;
 };
@@ -25,6 +28,7 @@ type ExperienceState = {
 export const useExperience = create<ExperienceState>()((set) => ({
   phase: 'loading',
   sceneProgress: 0,
+  sceneWarm: false,
   webgl: 'unknown',
   quality: 'high',
   setPhase: (phase) => {
@@ -33,6 +37,7 @@ export const useExperience = create<ExperienceState>()((set) => ({
     set({ phase });
   },
   setSceneProgress: (sceneProgress) => set({ sceneProgress }),
+  setSceneWarm: (sceneWarm) => set({ sceneWarm }),
   setWebgl: (webgl) => set({ webgl }),
   setQuality: (quality) => set({ quality }),
 }));

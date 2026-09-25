@@ -4,7 +4,7 @@ import type { ModelPreset } from '@apex/contracts';
 import { scene } from '@apex/ui/tokens';
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Material, Texture, Vector3 } from 'three';
 import type { Quality } from '@/stores/experience';
 import { createMaterialKit } from '../models/materials';
@@ -12,8 +12,11 @@ import type { ModelIdentity } from '../models/procedural';
 import type { ModelSource } from '../models/product-model';
 import { StudioLights } from '../stage/lights';
 import { LoadBridge } from '../stage/load-bridge';
-import { PostFx } from '../stage/post-fx';
+import { PostFx, usesComposer } from '../stage/post-fx';
+import { configureRenderer } from '../stage/renderer';
 import { SceneClock } from '../stage/scene-clock';
+import { SceneVignette } from '../stage/scene-vignette';
+import { Warmup } from '../stage/warmup';
 import { InstancedModel } from './instanced-model';
 import { cpuPose, dimmPose, gpuPose, serverLayout, type ServerLayoutInput } from './layout';
 import { buildServerBoard, disposeBoard } from './server-board';
@@ -36,6 +39,8 @@ export type ConfiguratorSceneProps = {
   gpu: SceneComponent | null;
   quality: Quality;
   reducedMotion: boolean;
+  /** Плата прогрета и показана — постер под сценой больше не нужен */
+  onReady?: () => void;
 };
 
 /** Ёмкость буферов экземпляров: больше не бывает ни на одной плате каталога */
@@ -50,6 +55,12 @@ const VIEW_DIRECTION = new Vector3(0.42, 1.25, 0.95).normalize();
 export default function ConfiguratorScene(props: ConfiguratorSceneProps) {
   const container = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
+  const [ready, setReady] = useState(false);
+  const { onReady } = props;
+  const handleReady = useCallback(() => {
+    setReady(true);
+    onReady?.();
+  }, [onReady]);
 
   useEffect(() => {
     const el = container.current;
@@ -63,19 +74,29 @@ export default function ConfiguratorScene(props: ConfiguratorSceneProps) {
   }, []);
 
   return (
-    <div ref={container} className="absolute inset-0" data-lenis-prevent>
+    <div
+      ref={container}
+      className={`absolute inset-0 transition-opacity duration-700 ${ready ? 'opacity-100' : 'opacity-0'}`}
+      data-lenis-prevent
+    >
       <Canvas
+        onCreated={configureRenderer}
         frameloop={inView ? 'always' : 'never'}
         dpr={props.quality === 'high' ? [1, 2] : [1, 1.5]}
-        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false }}
+        gl={{ antialias: !usesComposer(props.quality), alpha: false, powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: 30, near: 0.1, far: 60, position: [6, 8, 10] }}
       >
         <color attach="background" args={[scene.clearColor]} />
         <SceneClock />
         <LoadBridge />
-        <ServerScene {...props} />
+        <Suspense fallback={null}>
+          <Warmup offscreen={usesComposer(props.quality)} onReady={handleReady}>
+            <ServerScene {...props} />
+          </Warmup>
+        </Suspense>
         <PostFx quality={props.quality} />
       </Canvas>
+      {!usesComposer(props.quality) && <SceneVignette />}
     </div>
   );
 }
@@ -86,6 +107,7 @@ function ServerScene({
   cpu,
   memory,
   gpu,
+  quality,
   reducedMotion,
 }: ConfiguratorSceneProps) {
   const { sockets, dimmsPerSocket, gpuSlots } = layoutInput;
@@ -164,47 +186,49 @@ function ServerScene({
         }}
       />
       <primitive object={board} />
-      {/* GLB грузятся асинхронно: плата уже на месте, компоненты влетают, когда модель готова */}
+      {/* GLB грузятся асинхронно: плата уже на месте, компоненты влетают, когда модели загружены и прогреты */}
       <Suspense fallback={null}>
-        {cpu && (
-          <InstancedModel
-            preset={cpu.preset}
-            accent={cpu.accent}
-            identity={cpu.identity}
-            source={cpu.source}
-            poses={poses.cpu}
-            capacity={CAPACITY.cpu}
-            drop={3.2}
-            stagger={0.2}
-            reducedMotion={reducedMotion}
-          />
-        )}
-        {memory && (
-          <InstancedModel
-            preset={memory.preset}
-            accent={memory.accent}
-            identity={memory.identity}
-            source={memory.source}
-            poses={poses.memory}
-            capacity={CAPACITY.memory}
-            drop={2.4}
-            stagger={0.035}
-            reducedMotion={reducedMotion}
-          />
-        )}
-        {gpu && (
-          <InstancedModel
-            preset={gpu.preset}
-            accent={gpu.accent}
-            identity={gpu.identity}
-            source={gpu.source}
-            poses={poses.gpu}
-            capacity={CAPACITY.gpu}
-            drop={3}
-            stagger={0.09}
-            reducedMotion={reducedMotion}
-          />
-        )}
+        <Warmup offscreen={usesComposer(quality)}>
+          {cpu && (
+            <InstancedModel
+              preset={cpu.preset}
+              accent={cpu.accent}
+              identity={cpu.identity}
+              source={cpu.source}
+              poses={poses.cpu}
+              capacity={CAPACITY.cpu}
+              drop={3.2}
+              stagger={0.2}
+              reducedMotion={reducedMotion}
+            />
+          )}
+          {memory && (
+            <InstancedModel
+              preset={memory.preset}
+              accent={memory.accent}
+              identity={memory.identity}
+              source={memory.source}
+              poses={poses.memory}
+              capacity={CAPACITY.memory}
+              drop={2.4}
+              stagger={0.035}
+              reducedMotion={reducedMotion}
+            />
+          )}
+          {gpu && (
+            <InstancedModel
+              preset={gpu.preset}
+              accent={gpu.accent}
+              identity={gpu.identity}
+              source={gpu.source}
+              poses={poses.gpu}
+              capacity={CAPACITY.gpu}
+              drop={3}
+              stagger={0.09}
+              reducedMotion={reducedMotion}
+            />
+          )}
+        </Warmup>
       </Suspense>
     </>
   );

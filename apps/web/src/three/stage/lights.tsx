@@ -1,10 +1,11 @@
 'use client';
 
 import { scene, type LightingPreset } from '@apex/ui/tokens';
-import { Environment, Lightformer } from '@react-three/drei';
+import { Lightformer } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import type { Color, DirectionalLight, SpotLight } from 'three';
+import { StudioEnvironment } from './studio-environment';
 
 type StudioLightsProps = {
   accent: string;
@@ -56,14 +57,14 @@ export function StudioLights({ accent, preset = 'studio', getKey, getRim, rimFol
       <directionalLight ref={rim} position={[0.5, 1.2, -4]} intensity={cfg.rim} color={accent} />
 
       {/* Окружение печётся один раз, поэтому кольцо в нём нейтрально-холодное: цвет сцены даёт контровой свет */}
-      <Environment resolution={256} frames={1} environmentIntensity={cfg.environmentIntensity}>
+      <StudioEnvironment intensity={cfg.environmentIntensity}>
         <Lightformer form="rect" intensity={2.6} position={[0, 5, 0]} rotation-x={Math.PI / 2} scale={[6, 2.5, 1]} />
         <Lightformer form="rect" intensity={1.1} position={[-5, 1, 1]} rotation-y={Math.PI / 2} scale={[4, 1, 1]} />
         <Lightformer form="rect" intensity={1.1} position={[5, 1, 1]} rotation-y={-Math.PI / 2} scale={[4, 1, 1]} />
         {/* Фронтальный софтбокс, как в предметной съёмке: вертикальные металлические грани не уходят в черноту */}
         <Lightformer form="rect" intensity={0.9} position={[0, 1.5, 6]} scale={[10, 2.5, 1]} />
         <Lightformer form="ring" color="#a9b8e8" intensity={1.3} position={[0, 0.5, -6]} scale={3} />
-      </Environment>
+      </StudioEnvironment>
     </>
   );
 }

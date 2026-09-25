@@ -14,8 +14,11 @@ import { ProductModel, type ModelSource } from '../models/product-model';
 import { createRigControls } from '../models/rig';
 import { StudioLights } from '../stage/lights';
 import { LoadBridge } from '../stage/load-bridge';
-import { PostFx } from '../stage/post-fx';
+import { PostFx, usesComposer } from '../stage/post-fx';
+import { configureRenderer } from '../stage/renderer';
 import { SceneClock } from '../stage/scene-clock';
+import { SceneVignette } from '../stage/scene-vignette';
+import { Warmup } from '../stage/warmup';
 
 type Vec3 = [number, number, number];
 
@@ -39,6 +42,8 @@ export type ViewerProps = {
   /** Увеличивается — камера возвращается к общему виду */
   resetSignal: number;
   quality: Quality;
+  /** Модель загружена и прогрета — постер под сценой можно убирать */
+  onReady?: () => void;
 };
 
 /** Кнопки хотспотов по ключу — сцена двигает их каждый кадр */
@@ -66,22 +71,37 @@ export default function ProductViewer(props: ViewerProps) {
 
   const overview = OVERVIEW[props.model.preset];
   const markers = useRef<MarkerMap>(new Map());
+  const [ready, setReady] = useState(false);
+  const { onReady } = props;
+  const handleReady = useCallback(() => {
+    setReady(true);
+    onReady?.();
+  }, [onReady]);
 
   return (
-    <div ref={container} className="absolute inset-0 overflow-hidden" data-lenis-prevent>
+    // Пока модель не прогрета, канвас прозрачен: под ним постер-рендер, и смена выглядит как проявление
+    <div
+      ref={container}
+      className={`absolute inset-0 overflow-hidden transition-opacity duration-700 ${ready ? 'opacity-100' : 'opacity-0'}`}
+      data-lenis-prevent
+    >
       <Canvas
+        onCreated={configureRenderer}
         frameloop={inView ? 'always' : 'never'}
         dpr={props.quality === 'high' ? [1, 2] : [1, 1.5]}
-        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false }}
+        // Без композера сглаживает сам контекст (MSAA)
+        gl={{ antialias: !usesComposer(props.quality), alpha: false, powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: 32, near: 0.05, far: 40, position: overview.position }}
       >
         <color attach="background" args={[scene.clearColor]} />
         <SceneClock />
         <LoadBridge />
-        <ViewerScene {...props} markers={markers} />
+        <ViewerScene {...props} onReady={handleReady} markers={markers} />
         <PostFx quality={props.quality} />
       </Canvas>
-      <div className="pointer-events-none absolute inset-0">
+      {!usesComposer(props.quality) && <SceneVignette />}
+      {/* До прогрева хотспоты недоступны и с клавиатуры */}
+      <div className="pointer-events-none absolute inset-0" inert={!ready}>
         {props.hotspots.map((hotspot, i) => (
           <button
             key={hotspot.key}
@@ -106,7 +126,17 @@ export default function ProductViewer(props: ViewerProps) {
   );
 }
 
-function ViewerScene({ model, hotspots, exploded, lighting, activeHotspot, resetSignal, markers }: ViewerProps & { markers: RefObject<MarkerMap> }) {
+function ViewerScene({
+  model,
+  hotspots,
+  exploded,
+  lighting,
+  activeHotspot,
+  resetSignal,
+  quality,
+  onReady,
+  markers,
+}: ViewerProps & { markers: RefObject<MarkerMap> }) {
   const reducedMotion = usePrefersReducedMotion();
   const controls = useMemo(() => createRigControls(), []);
   const camera = useThree((s) => s.camera);
@@ -232,9 +262,11 @@ function ViewerScene({ model, hotspots, exploded, lighting, activeHotspot, reset
         onStart={onStart}
         onEnd={onEnd}
       />
-      {/* GLB грузится асинхронно: свет и камера работают сразу, модель появляется по готовности */}
+      {/* GLB грузится асинхронно: свет и камера работают сразу, модель появляется после прогрева */}
       <Suspense fallback={null}>
-        <ProductModel {...model} controls={controls} onRoot={onRoot} />
+        <Warmup offscreen={usesComposer(quality)} onReady={onReady}>
+          <ProductModel {...model} controls={controls} onRoot={onRoot} />
+        </Warmup>
       </Suspense>
     </>
   );

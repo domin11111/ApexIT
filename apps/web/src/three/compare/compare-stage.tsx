@@ -3,7 +3,7 @@
 import type { ModelPreset } from '@apex/contracts';
 import { scene } from '@apex/ui/tokens';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { Group } from 'three';
 import type { Quality } from '@/stores/experience';
 import type { ModelIdentity } from '../models/procedural';
@@ -12,8 +12,11 @@ import { createRigControls } from '../models/rig';
 import { StudioLights } from '../stage/lights';
 import { LoadBridge } from '../stage/load-bridge';
 import { Podium } from '../stage/podium';
-import { PostFx } from '../stage/post-fx';
+import { PostFx, usesComposer } from '../stage/post-fx';
+import { configureRenderer } from '../stage/renderer';
 import { SceneClock } from '../stage/scene-clock';
+import { SceneVignette } from '../stage/scene-vignette';
+import { Warmup } from '../stage/warmup';
 
 export type CompareModel = { slug: string; preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource | undefined };
 
@@ -33,6 +36,16 @@ export default function CompareStage({ models, quality, reducedMotion }: Props) 
   const [inView, setInView] = useState(true);
   // Общий угол всех моделей и состояние перетаскивания — изменяемый объект, без ре-рендеров
   const spin = useRef({ angle: 0, dragging: false, lastX: 0, idleAt: 0 });
+  // Сцена проявляется над постерами, когда прогреты все модели первого набора
+  const warmed = useRef(new Set<string>());
+  const [ready, setReady] = useState(false);
+  const onWarm = useCallback(
+    (slug: string) => {
+      warmed.current.add(slug);
+      if (models.every((m) => warmed.current.has(m.slug))) setReady(true);
+    },
+    [models],
+  );
 
   useEffect(() => {
     const el = container.current;
@@ -45,7 +58,7 @@ export default function CompareStage({ models, quality, reducedMotion }: Props) 
   return (
     <div
       ref={container}
-      className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
+      className={`absolute inset-0 cursor-grab touch-pan-y transition-opacity duration-700 active:cursor-grabbing ${ready ? 'opacity-100' : 'opacity-0'}`}
       onPointerDown={(event) => {
         spin.current.dragging = true;
         spin.current.lastX = event.clientX;
@@ -66,18 +79,29 @@ export default function CompareStage({ models, quality, reducedMotion }: Props) 
       }}
     >
       <Canvas
+        onCreated={configureRenderer}
         frameloop={inView ? 'always' : 'never'}
         dpr={quality === 'high' ? [1, 2] : [1, 1.5]}
-        gl={{ antialias: false, alpha: false, powerPreference: 'high-performance', stencil: false }}
+        gl={{ antialias: !usesComposer(quality), alpha: false, powerPreference: 'high-performance', stencil: false }}
         camera={{ fov: 30, near: 0.1, far: 60, position: [0, 3, 9] }}
       >
         <color attach="background" args={[scene.clearColor]} />
         <SceneClock />
         <LoadBridge />
         <StudioLights accent={models[0]?.accent ?? '#ffffff'} />
-        <Lineup models={models} spin={spin} reducedMotion={reducedMotion} />
+        {/* Подиум тоже прогревается: иначе его шейдер соберётся синхронно в первом же кадре */}
+        <Warmup offscreen={usesComposer(quality)}>
+          <Lineup
+            models={models}
+            spin={spin}
+            reducedMotion={reducedMotion}
+            offscreen={usesComposer(quality)}
+            onWarm={onWarm}
+          />
+        </Warmup>
         <PostFx quality={quality} />
       </Canvas>
+      {!usesComposer(quality) && <SceneVignette />}
     </div>
   );
 }
@@ -86,10 +110,14 @@ function Lineup({
   models,
   spin,
   reducedMotion,
+  offscreen,
+  onWarm,
 }: {
   models: CompareModel[];
   spin: RefObject<{ angle: number; dragging: boolean; lastX: number; idleAt: number }>;
   reducedMotion: boolean;
+  offscreen: boolean;
+  onWarm: (slug: string) => void;
 }) {
   const groups = useRef<Array<Group | null>>([]);
   const controls = useMemo(() => models.map(() => createRigControls()), [models]);
@@ -132,7 +160,9 @@ function Lineup({
             }}
           >
             <Suspense fallback={null}>
-              <ProductModel preset={model.preset} accent={model.accent} identity={model.identity} source={model.source} controls={controls[i]!} />
+              <Warmup offscreen={offscreen} onReady={() => onWarm(model.slug)}>
+                <ProductModel preset={model.preset} accent={model.accent} identity={model.identity} source={model.source} controls={controls[i]!} />
+              </Warmup>
             </Suspense>
           </group>
         </group>

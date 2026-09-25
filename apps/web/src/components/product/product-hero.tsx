@@ -6,10 +6,14 @@ import type { LightingPreset } from '@apex/ui/tokens';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAfterLoad } from '@/hooks/use-after-load';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useWebgl } from '@/hooks/use-webgl';
 import { Link } from '@/i18n/navigation';
-import { useExperience } from '@/stores/experience';
+import { renderFor } from '@/lib/renders';
 import { Magnetic } from '../ui/magnetic';
+import { RenderImage } from '../ui/render-image';
+import { WebglBoundary } from '../experience/webgl-boundary';
 import type { ModelSource } from '@/three/models/product-model';
 import { StatusBadge } from '../ui/status-badge';
 
@@ -49,16 +53,12 @@ export function ProductHero({ product, locale }: { product: ProductHeroData; loc
   const [resetSignal, setResetSignal] = useState(0);
   // Телефоны и планшеты — без bloom (medium)
   const quality = useMediaQuery('(pointer: coarse), (max-width: 767px)') ? 'medium' : 'high';
-  const webgl = useExperience((s) => s.webgl);
+  const webgl = useWebgl();
   const panel = useRef<HTMLDivElement>(null);
-
-  // Прямой заход на страницу продукта: проверяем WebGL здесь, а не только на главной
-  const setWebgl = useExperience((s) => s.setWebgl);
-  useEffect(() => {
-    if (useExperience.getState().webgl !== 'unknown') return;
-    const canvas = document.createElement('canvas');
-    setWebgl(canvas.getContext('webgl2') ?? canvas.getContext('webgl') ? 'supported' : 'unsupported');
-  }, [setWebgl]);
+  // Первый экран — постер-рендер (он же LCP и фолбэк без WebGL); сцена монтируется, когда страница загружена.
+  // Без WebGL кнопка «Разобрать» переключает постер на рендер разобранной модели
+  const poster = (webgl === 'unsupported' && exploded && renderFor(product.slug, 'exploded')) || renderFor(product.slug);
+  const mountViewer = useAfterLoad();
 
   const activeHotspot = product.hotspots.find((h) => h.key === active) ?? null;
 
@@ -99,24 +99,39 @@ export function ProductHero({ product, locale }: { product: ProductHeroData; loc
       {/* ── 3D ─────────────────────────────────────────────────────────── */}
       <div className="relative order-first lg:order-last">
         <div className="relative h-[52svh] min-h-[340px] overflow-hidden rounded-xl border border-line sm:h-[58svh] sm:min-h-[380px] lg:h-[78vh]">
-          {webgl !== 'unsupported' && (
-            <ProductViewer
-              model={{
-                preset: product.modelPreset,
-                accent: product.accentColor,
-                identity: { brand: product.brand, name: product.name, codename: product.codename },
-                source: product.modelSource,
-              }}
-              hotspots={product.hotspots}
-              exploded={exploded}
-              lighting={lighting}
-              activeHotspot={active}
-              onHotspot={selectHotspot}
-              resetSignal={resetSignal}
-              quality={quality}
+          {poster && (
+            <RenderImage
+              render={poster}
+              alt={fullName}
+              sizes="(min-width: 1024px) 60vw, 100vw"
+              priority
+              className="absolute inset-0 size-full object-contain"
             />
           )}
-          <p className="pointer-events-none absolute left-4 top-4 font-mono text-caption uppercase tracking-caption text-fg-tertiary" aria-hidden>
+          {webgl === 'supported' && mountViewer && (
+            <WebglBoundary>
+              <ProductViewer
+                model={{
+                  preset: product.modelPreset,
+                  accent: product.accentColor,
+                  identity: { brand: product.brand, name: product.name, codename: product.codename },
+                  source: product.modelSource,
+                }}
+                hotspots={product.hotspots}
+                exploded={exploded}
+                lighting={lighting}
+                activeHotspot={active}
+                onHotspot={selectHotspot}
+                resetSignal={resetSignal}
+                quality={quality}
+              />
+            </WebglBoundary>
+          )}
+          <p
+            hidden={webgl === 'unsupported'}
+            className="pointer-events-none absolute left-4 top-4 font-mono text-caption uppercase tracking-caption text-fg-tertiary"
+            aria-hidden
+          >
             <span className="pointer-coarse:hidden">{t('viewer.hint')}</span>
             <span className="hidden pointer-coarse:inline">{t('viewer.hintTouch')}</span>
           </p>
@@ -155,7 +170,12 @@ export function ProductHero({ product, locale }: { product: ProductHeroData; loc
           >
             {exploded ? t('viewer.assemble') : t('viewer.explode')}
           </button>
-          <div role="radiogroup" aria-label={t('viewer.lighting')} className="flex rounded-pill border border-line p-0.5 max-sm:order-last">
+          <div
+            role="radiogroup"
+            aria-label={t('viewer.lighting')}
+            hidden={webgl === 'unsupported'}
+            className="flex rounded-pill border border-line p-0.5 max-sm:order-last"
+          >
             {LIGHTING.map((preset) => (
               <button
                 key={preset.id}

@@ -17,8 +17,11 @@ import { modelSource } from '@/lib/model-source';
 import { toBars, toStoryProduct, type StoryData } from '@/story/data';
 import type { StoryModel } from '@/three/story/story-scene';
 import type { ProductDetailDto } from '@apex/contracts';
+import { JsonLd } from '@/components/seo/json-ld';
+import { SITE_NAME, SITE_URL, absoluteUrl, localizedPath } from '@/lib/site';
 
 const model = (p: ProductDetailDto): StoryModel => ({
+  slug: p.slug,
   preset: p.modelPreset,
   accent: p.accentColor,
   accentAlt: p.accentColorAlt,
@@ -50,8 +53,40 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     collection: list.items,
   };
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}#org`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        logo: absoluteUrl('/icon.svg'),
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}#site`,
+        name: SITE_NAME,
+        url: absoluteUrl(localizedPath(locale, '/')),
+        inLanguage: locale,
+        publisher: { '@id': `${SITE_URL}#org` },
+      },
+      {
+        '@type': 'ItemList',
+        name: 'The Compute Collection 2026',
+        itemListElement: list.items.map((p, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: `${p.brand} ${p.name}`,
+          url: absoluteUrl(localizedPath(locale, `/products/${p.slug}`)),
+        })),
+      },
+    ],
+  };
+
   return (
     <main id="content">
+      <JsonLd data={jsonLd} />
       <StoryScroll />
       <StoryRail />
       <ExperienceSlot
