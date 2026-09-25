@@ -3,6 +3,22 @@ import { DomainError } from '@apex/domain';
 import type { FastifyError, FastifyInstance } from 'fastify';
 import { hasZodFastifySchemaValidationErrors, isResponseSerializationError } from 'fastify-type-provider-zod';
 
+/**
+ * Ожидаемая ошибка уровня API (заявки, админка): код стабилен, message — для человека.
+ * Ошибки предметной области каталога — DomainError из @apex/domain.
+ */
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string,
+    readonly details?: unknown,
+  ) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
 export function apiError(code: string, message: string, requestId: string, details?: unknown): ApiError {
   return { error: { code, message, requestId, ...(details === undefined ? {} : { details }) } };
 }
@@ -18,6 +34,10 @@ export function registerErrorHandlers(app: FastifyInstance): void {
 
     if (error instanceof DomainError) {
       return reply.code(error.status).send(error.toApiError(request.id));
+    }
+
+    if (error instanceof HttpError) {
+      return reply.code(error.status).send(apiError(error.code, error.message, request.id, error.details));
     }
 
     if (isResponseSerializationError(error)) {

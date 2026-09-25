@@ -4,8 +4,10 @@ import type { ModelPreset } from '@apex/contracts';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { Euler, Matrix4, Quaternion, Vector3, type InstancedMesh } from 'three';
+import { prepareGlb } from '../models/glb';
 import { buildProceduralModel, type ModelIdentity } from '../models/procedural';
-import { disposeParts, disposeSource, flattenByMaterial } from './flatten';
+import { useGlbScene, type ModelSource } from '../models/product-model';
+import { disposeParts, disposeSource, flattenByMaterial, type FlatPart } from './flatten';
 import type { SlotPose } from './layout';
 
 type Instance = {
@@ -19,10 +21,7 @@ type Instance = {
   pose: SlotPose;
 };
 
-type InstancedModelProps = {
-  preset: ModelPreset;
-  accent: string;
-  identity?: ModelIdentity;
+type InstancesProps = {
   /** Занятые слоты по порядку: первые poses.length экземпляров стоят на местах */
   poses: readonly SlotPose[];
   /** Ёмкость буфера экземпляров — постоянная, чтобы InstancedMesh не пересоздавался */
@@ -34,6 +33,14 @@ type InstancedModelProps = {
   reducedMotion: boolean;
 };
 
+type InstancedModelProps = InstancesProps & {
+  preset: ModelPreset;
+  accent: string;
+  identity?: ModelIdentity;
+  /** GLB из tools/blender или админки; без него — процедурная модель по preset */
+  source?: ModelSource | undefined;
+};
+
 const EMPTY_POSE: SlotPose = { position: [0, 0, 0], rotation: [0, 0, 0], scale: 0 };
 
 /**
@@ -41,16 +48,20 @@ const EMPTY_POSE: SlotPose = { position: [0, 0, 0], rotation: [0, 0, 0], scale: 
  * модель «запекается» один раз, а каждый экземпляр влетает в свой слот сверху с разворотом.
  * Убранные компоненты улетают обратно вверх. При prefers-reduced-motion — мгновенно.
  */
-export function InstancedModel({
+export function InstancedModel({ source, preset, accent, identity, ...rest }: InstancedModelProps) {
+  return source ? (
+    <GlbInstances source={source} {...rest} />
+  ) : (
+    <ProceduralInstances preset={preset} accent={accent} identity={identity} {...rest} />
+  );
+}
+
+function ProceduralInstances({
   preset,
   accent,
   identity,
-  poses,
-  capacity,
-  drop = 2.6,
-  stagger = 0.06,
-  reducedMotion,
-}: InstancedModelProps) {
+  ...rest
+}: InstancesProps & { preset: ModelPreset; accent: string; identity?: ModelIdentity | undefined }) {
   const brand = identity?.brand;
   const name = identity?.name;
   const codename = identity?.codename;
@@ -61,6 +72,24 @@ export function InstancedModel({
     return flat;
   }, [preset, accent, brand, name, codename]);
   useEffect(() => () => disposeParts(parts), [parts]);
+  return <Instances parts={parts} {...rest} />;
+}
+
+/**
+ * Экземпляры GLB. Для десятков копий берётся облегчённый вариант (mobileUrl): на экране модуль
+ * размером в палец, текстур 1024 px хватает с запасом. Геометрия и текстуры — из общего кэша
+ * загрузчика: освобождаем только свои склеенные геометрии и клоны материалов.
+ */
+function GlbInstances({ source, ...rest }: InstancesProps & { source: ModelSource }) {
+  const scene = useGlbScene(source.mobileUrl ?? source.url);
+  const parts = useMemo(() => flattenByMaterial(prepareGlb(scene, source.manifest)), [scene, source.manifest]);
+  useEffect(() => () => disposeParts(parts, { textures: false }), [parts]);
+  return <Instances parts={parts} {...rest} />;
+}
+
+function Instances({ parts, poses, capacity, drop = 2.6, stagger = 0.06, reducedMotion }: InstancesProps & { parts: FlatPart[] }) {
+  // Позы задают низ модели: так в слот одинаково встают процедурная модель и GLB с любыми пропорциями
+  const baseY = useMemo(() => Math.min(0, ...parts.map((part) => part.geometry.boundingBox?.min.y ?? 0)), [parts]);
 
   const meshes = useRef<Array<InstancedMesh | null>>([]);
   const instances = useRef<Instance[]>([]);
@@ -76,7 +105,7 @@ export function InstancedModel({
   }, [capacity, parts]);
 
   const scratch = useMemo(
-    () => ({ matrix: new Matrix4(), quaternion: new Quaternion(), euler: new Euler(), scale: new Vector3(), goal: new Vector3() }),
+    () => ({ matrix: new Matrix4(), quaternion: new Quaternion(), euler: new Euler(), scale: new Vector3(), goal: new Vector3(), lifted: new Vector3() }),
     [],
   );
 
@@ -84,7 +113,7 @@ export function InstancedModel({
     const list = instances.current;
     if (list.length === 0) return;
     const delta = Math.min(rawDelta, 0.05);
-    const { matrix, quaternion, euler, scale, goal } = scratch;
+    const { matrix, quaternion, euler, scale, goal, lifted } = scratch;
     let entering = 0;
     let count = 0;
 
@@ -128,7 +157,9 @@ export function InstancedModel({
       const [rx, ry, rz] = instance.pose.rotation;
       euler.set(rx + (1 - progress) * 0.35, ry + (1 - progress) * 1.1, rz);
       const s = visible ? instance.pose.scale * (0.75 + 0.25 * progress) : 0;
-      matrix.compose(instance.position, quaternion.setFromEuler(euler), scale.setScalar(s));
+      // Низ модели — в точке позы: подъём на -baseY в масштабе экземпляра (поворот только вокруг Y)
+      lifted.copy(instance.position).setY(instance.position.y - baseY * s);
+      matrix.compose(lifted, quaternion.setFromEuler(euler), scale.setScalar(s));
       for (const mesh of meshes.current) mesh?.setMatrixAt(i, matrix);
       if (instance.alive) count = i + 1;
     }

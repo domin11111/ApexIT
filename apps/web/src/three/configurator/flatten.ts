@@ -61,18 +61,24 @@ export function flattenByMaterial(root: Object3D): FlatPart[] {
     for (const geometry of geometries) geometry.dispose();
     if (merged) {
       merged.computeBoundingSphere();
+      merged.computeBoundingBox();
       parts.push({ geometry: merged, material });
     }
   }
   return parts;
 }
 
-/** Освобождает запечённые части вместе с материалами и текстурами. */
-export function disposeParts(parts: readonly FlatPart[]): void {
+/**
+ * Освобождает запечённые части. Текстуры GLB принадлежат общему кэшу загрузчика
+ * (их использует и страница продукта) — для них textures: false.
+ */
+export function disposeParts(parts: readonly FlatPart[], { textures = true }: { textures?: boolean } = {}): void {
   for (const { geometry, material } of parts) {
     geometry.dispose();
-    for (const value of Object.values(material)) {
-      if (value instanceof Texture) value.dispose();
+    if (textures) {
+      for (const value of Object.values(material)) {
+        if (value instanceof Texture) value.dispose();
+      }
     }
     material.dispose();
   }

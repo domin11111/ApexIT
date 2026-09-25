@@ -5,6 +5,6 @@ import { routing } from './i18n/routing';
 export default createMiddleware(routing);
 
 export const config = {
-  // Всё, кроме API, служебных путей Next и файлов с расширением (в т.ч. mockServiceWorker.js)
-  matcher: '/((?!api|_next|_vercel|.*\\..*).*)',
+  // Всё, кроме API, админки (она без локалей), служебных путей Next и файлов с расширением
+  matcher: '/((?!api|admin|_next|_vercel|.*\\..*).*)',
 };

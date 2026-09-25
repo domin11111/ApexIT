@@ -29,7 +29,8 @@ const OVERVIEW: Record<ModelPreset, { position: Vec3; target: Vec3 }> = {
 };
 
 export type ViewerProps = {
-  model: { preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource };
+  /** source — загруженный GLB; без него рисуется процедурная модель по preset */
+  model: { preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource | undefined };
   hotspots: HotspotDto[];
   exploded: boolean;
   lighting: LightingPreset;

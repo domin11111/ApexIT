@@ -12,6 +12,8 @@ onlyBuiltDependencies:
 # у @swc/core, @parcel/watcher и unrs-resolver есть готовые бинарники в optionalDependencies,
 # worker MSW для браузера кладётся в apps/web/public командой `msw init`.
 ignoredBuiltDependencies:
+  # Необязательное ускорение msgpack для BullMQ: без сборки работает JS-версия
+  - msgpackr-extract
   - cpu-features
   - ssh2
   - protobufjs

@@ -24,8 +24,10 @@ import {
   supportsSocket,
   type ConfiguratorCatalog,
 } from '@/lib/configurator-state';
+import { modelSource } from '@/lib/model-source';
 import { useExperience } from '@/stores/experience';
 import type { SceneComponent } from '@/three/configurator/configurator-scene';
+import { RDIMM_FILLER_URL } from '@/three/models/fillers';
 import { StatusBadge } from '../ui/status-badge';
 import { CountStepper } from './count-stepper';
 import { SharedBuildLoader } from './shared-build-loader';
@@ -38,15 +40,21 @@ const STEPS: StepKey[] = ['platform', 'cpu', 'memory', 'gpu'];
 
 type Locale = 'ru' | 'en';
 
-const sceneComponent = (product: ProductDetailDto | undefined, count: number): SceneComponent | null =>
-  product
-    ? {
-        preset: product.modelPreset,
-        accent: product.accentColor,
-        identity: { brand: product.brand, name: product.name, codename: product.codename },
-        count,
-      }
-    : null;
+/**
+ * Компонент для 3D-превью: реальная модель продукта (GLB), если она есть.
+ * Модулей памяти в сборке до 48 — для них вместо полной модели (35 тыс. треугольников) облегчённая.
+ */
+const sceneComponent = (product: ProductDetailDto | undefined, count: number): SceneComponent | null => {
+  if (!product) return null;
+  const source = modelSource(product.models);
+  return {
+    preset: product.modelPreset,
+    accent: product.accentColor,
+    identity: { brand: product.brand, name: product.name, codename: product.codename },
+    count,
+    source: source && product.modelPreset === 'RDIMM' ? { url: RDIMM_FILLER_URL } : source,
+  };
+};
 
 const numberOf = (product: ProductDetailDto | undefined, key: string) =>
   product?.specGroups.flatMap((g) => g.specs).find((s) => s.key === key)?.numericValue ?? null;

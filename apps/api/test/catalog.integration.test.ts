@@ -1,7 +1,3 @@
-import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { buildCatalogRecords } from '@apex/collection';
 import {
   ApiError,
   CompareResponse,
@@ -15,59 +11,21 @@ import {
   ProductListResponse,
 } from '@apex/contracts';
 import { handlers } from '@apex/mocks';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
 import { getResponse } from 'msw';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp, type App } from '../src/app';
-import { createRedis } from '../src/cache/redis';
-import { loadEnv } from '../src/config/env';
-import { createPrisma } from '../src/db/prisma';
-import { seedCatalog } from '../src/db/seed-catalog';
+import type { App } from '../src/app';
+import { startHarness, type Harness } from './harness';
 
-const apiRoot = fileURLToPath(new URL('..', import.meta.url));
-
-let postgres: StartedPostgreSqlContainer;
-let redisContainer: StartedRedisContainer;
+let harness: Harness;
 let app: App;
 
 beforeAll(async () => {
-  [postgres, redisContainer] = await Promise.all([
-    new PostgreSqlContainer('postgres:17-alpine').start(),
-    new RedisContainer('redis:7-alpine').start(),
-  ]);
-  const databaseUrl = postgres.getConnectionUri();
-
-  // Те же миграции, что и в production
-  execFileSync(process.execPath, [join(apiRoot, 'node_modules/prisma/build/index.js'), 'migrate', 'deploy'], {
-    cwd: apiRoot,
-    env: { ...process.env, DATABASE_URL: databaseUrl },
-    stdio: 'pipe',
-  });
-
-  const prisma = createPrisma(databaseUrl);
-  await seedCatalog(prisma, buildCatalogRecords());
-
-  const redis = createRedis(redisContainer.getConnectionUrl());
-  await redis.connect();
-
-  app = await buildApp({
-    env: loadEnv({
-      NODE_ENV: 'test',
-      LOG_LEVEL: 'silent',
-      DATABASE_URL: databaseUrl,
-      REDIS_URL: redisContainer.getConnectionUrl(),
-      WEB_ORIGIN: 'http://localhost:3000',
-    }),
-    prisma,
-    redis,
-  });
-  await app.ready();
+  harness = await startHarness();
+  app = harness.app;
 });
 
 afterAll(async () => {
-  await app?.close();
-  await Promise.all([postgres?.stop(), redisContainer?.stop()]);
+  await harness?.stop();
 });
 
 const get = async (url: string, headers: Record<string, string> = {}) => {
@@ -191,17 +149,26 @@ describe('публичный API каталога', () => {
   it('OpenAPI описывает все публичные маршруты', async () => {
     const { body } = await get('/docs/json');
     const doc = body as { paths: Record<string, unknown>; components: { schemas: Record<string, unknown> } };
-    expect(Object.keys(doc.paths).sort()).toEqual([
-      '/api/v1/compare',
-      '/api/v1/configurations',
-      '/api/v1/configurations/validate',
-      '/api/v1/configurations/{shareCode}',
-      '/api/v1/platforms',
-      '/api/v1/platforms/{socket}/motherboards',
-      '/api/v1/products',
-      '/api/v1/products/{slug}',
-      '/health',
-    ]);
+    const paths = Object.keys(doc.paths);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        '/api/v1/compare',
+        '/api/v1/configurations',
+        '/api/v1/configurations/validate',
+        '/api/v1/configurations/{shareCode}',
+        '/api/v1/leads',
+        '/api/v1/platforms',
+        '/api/v1/platforms/{socket}/motherboards',
+        '/api/v1/products',
+        '/api/v1/products/{slug}',
+        '/api/admin/auth/login',
+        '/api/admin/products/{id}/hotspots',
+        '/api/admin/assets/uploads',
+        '/health',
+      ]),
+    );
+    // Отладочный вход по ссылке не документируется и в тестовой среде не регистрируется
+    expect(paths.some((path) => path.includes('dev-login'))).toBe(false);
     expect(Object.keys(doc.components.schemas)).toEqual(
       expect.arrayContaining(['ProductDetail', 'ProductSummary', 'Spec', 'CompareResponse', 'ApiError']),
     );

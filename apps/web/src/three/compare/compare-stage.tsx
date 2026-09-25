@@ -3,11 +3,11 @@
 import type { ModelPreset } from '@apex/contracts';
 import { scene } from '@apex/ui/tokens';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { Group } from 'three';
 import type { Quality } from '@/stores/experience';
 import type { ModelIdentity } from '../models/procedural';
-import { ProductModel } from '../models/product-model';
+import { ProductModel, type ModelSource } from '../models/product-model';
 import { createRigControls } from '../models/rig';
 import { StudioLights } from '../stage/lights';
 import { LoadBridge } from '../stage/load-bridge';
@@ -15,7 +15,7 @@ import { Podium } from '../stage/podium';
 import { PostFx } from '../stage/post-fx';
 import { SceneClock } from '../stage/scene-clock';
 
-export type CompareModel = { slug: string; preset: ModelPreset; accent: string; identity: ModelIdentity };
+export type CompareModel = { slug: string; preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource | undefined };
 
 type Props = { models: CompareModel[]; quality: Quality; reducedMotion: boolean };
 
@@ -131,7 +131,9 @@ function Lineup({
               groups.current[i] = group;
             }}
           >
-            <ProductModel preset={model.preset} accent={model.accent} identity={model.identity} controls={controls[i]!} />
+            <Suspense fallback={null}>
+              <ProductModel preset={model.preset} accent={model.accent} identity={model.identity} source={model.source} controls={controls[i]!} />
+            </Suspense>
           </group>
         </group>
       ))}

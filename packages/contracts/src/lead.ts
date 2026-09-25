@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Locale, Slug } from './common';
+import { ShareCode } from './configuration';
 import { LeadIntent } from './enums';
 
 /** POST /api/v1/leads — одна схема для клиентской валидации формы и для API. */
@@ -15,7 +16,7 @@ export const LeadCreate = z.object({
   message: z.string().trim().max(4000).optional(),
   intent: LeadIntent,
   productSlug: Slug.optional(),
-  configurationShareCode: z.string().max(32).optional(),
+  configurationShareCode: ShareCode.optional(),
   locale: Locale,
   /** Согласие на обработку персональных данных (152-ФЗ / GDPR) */
   consent: z.literal(true, 'Нужно согласие на обработку данных'),

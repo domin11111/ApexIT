@@ -6,8 +6,9 @@ import { CompareStagePanel } from '@/components/compare/compare-stage-panel';
 import { CompareTable } from '@/components/compare/compare-table';
 import { RevealText } from '@/components/story/reveal-text';
 import type { routing } from '@/i18n/routing';
-import { getCompare, getProducts } from '@/lib/catalog';
+import { getCompare, getProduct, getProducts } from '@/lib/catalog';
 import { resolveSelection } from '@/lib/compare-selection';
+import { modelSource } from '@/lib/model-source';
 
 type Locale = (typeof routing.locales)[number];
 
@@ -31,6 +32,8 @@ export default async function ComparePage({ params, searchParams }: PageProps<'/
   const selection = resolveSelection(items, (await searchParams).slugs);
   const table = selection.length >= 2 ? await getCompare(selection, locale) : null;
   const selected = selection.flatMap((slug) => items.filter((p) => p.slug === slug));
+  // Реальные модели (GLB) — из карточек продуктов; в списке продуктов их нет
+  const details = table ? await Promise.all(selected.map((p) => getProduct(p.slug, locale))) : [];
 
   return (
     <main id="content" className="mx-auto max-w-[var(--layout-max)] px-[var(--layout-gutter)] pb-24 pt-[calc(var(--layout-header-h)+2rem)]">
@@ -49,11 +52,12 @@ export default async function ComparePage({ params, searchParams }: PageProps<'/
           <div className="mt-10">
             <CompareStagePanel
               key={selection.join(',')}
-              items={selected.map((p) => ({
+              items={selected.map((p, i) => ({
                 slug: p.slug,
                 preset: p.modelPreset,
                 accent: p.accentColor,
                 identity: { brand: p.brand, name: p.name, codename: p.codename },
+                source: details[i] ? modelSource(details[i].models) : undefined,
                 title: `${p.brand} ${p.name}`,
               }))}
             />

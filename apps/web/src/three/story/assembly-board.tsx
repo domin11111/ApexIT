@@ -6,13 +6,14 @@ import { useEffect, useMemo, useRef } from 'react';
 import { MathUtils, Mesh, type Group, type Material, type ShaderMaterial } from 'three';
 import { BOARD_DISPLAY, BOARD_LAYOUT, BOARD_TOP, BOARD_YAW, FILLER_ORDER, ASSEMBLY } from '@/story/assembly';
 import { BOARD_Y, type StoryPose } from '@/story/director';
+import { RDIMM_FILLER_URL } from '../models/fillers';
 import { prepareGlb } from '../models/glb';
 import { useModelUrl, type ModelSource } from '../models/product-model';
 import { buildTraceGeometry, createTraceMaterial, type TracePath } from '../traces';
 
 const BOARD: ModelSource = { url: '/models/board-sp7.glb', mobileUrl: '/models/board-sp7-mobile.glb' };
 /** Облегчённый модуль памяти (без слоёв кристаллов и пассивки, текстуры 1024 px) — статисты в слотах */
-const FILLER_URL = '/models/rdimm-micron-512gb-lod.glb';
+const FILLER_URL = RDIMM_FILLER_URL;
 
 /** Длина трасс (в единицах модели платы), которая прорисована при reveal = 1 */
 const REVEAL_LENGTH = 0.8;

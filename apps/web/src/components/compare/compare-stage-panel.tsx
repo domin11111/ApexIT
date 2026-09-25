@@ -42,7 +42,7 @@ export function CompareStagePanel({ items }: { items: CompareItem[] }) {
       <div className="relative h-[42svh] min-h-[300px] overflow-hidden rounded-xl border border-line lg:h-[56vh]">
         {webgl !== 'unsupported' && (
           <CompareStage
-            models={items.map(({ slug, preset, accent, identity }) => ({ slug, preset, accent, identity }))}
+            models={items.map(({ slug, preset, accent, identity, source }) => ({ slug, preset, accent, identity, source }))}
             quality={quality}
             reducedMotion={reducedMotion}
           />

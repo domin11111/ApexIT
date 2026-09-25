@@ -78,28 +78,33 @@ export function serverLayout({ sockets, dimmsPerSocket, gpuSlots }: ServerLayout
 }
 
 /*
- * Позы моделей в слотах. Модели нормированы к габариту 2 (см. Vec3 в @apex/contracts):
- * процессор — квадрат ~2.1, модуль памяти — длина 2 вдоль X и высота 0.44, карта — длина 2 и высота 0.73.
+ * Позы моделей в слотах: position — точка, где стоит НИЗ модели (InstancedModel выравнивает
+ * по габаритам геометрии), поэтому процедурные модели и GLB из Blender встают одинаково.
+ * Модели нормированы к наибольшему габариту 2 (см. Vec3 в @apex/contracts).
  */
-const CPU_SCALE = SOCKET_SIZE / 2.1;
+const CPU_SCALE = SOCKET_SIZE / 2.05;
 const DIMM_SCALE = DIMM_LENGTH / 2;
+/** Верх контактного поля сокета */
+const SOCKET_TOP = 0.004;
+/** Глубина посадки модуля и карты в разъём высотой 0.06 */
+const SLOT_SEAT = 0.03;
 
 export const cpuPose = (socket: Point): SlotPose => ({
-  position: [socket.x, 0.13 * CPU_SCALE, socket.z],
+  position: [socket.x, SOCKET_TOP, socket.z],
   rotation: [0, 0, 0],
   scale: CPU_SCALE,
 });
 
 /** Модуль повёрнут вдоль Z и стоит контактами в слоте */
 export const dimmPose = (slot: Point): SlotPose => ({
-  position: [slot.x, 0.06 + 0.22 * DIMM_SCALE, slot.z],
+  position: [slot.x, SLOT_SEAT, slot.z],
   rotation: [0, Math.PI / 2, 0],
   scale: DIMM_SCALE,
 });
 
 /** Карта длиной вдоль Z, брекетом к заднему краю платы, разъёмом PCIe вниз */
 export const gpuPose = (slot: Point): SlotPose => ({
-  position: [slot.x, 0.45, slot.z],
+  position: [slot.x, SLOT_SEAT, slot.z],
   rotation: [0, -Math.PI / 2, 0],
   scale: 1,
 });

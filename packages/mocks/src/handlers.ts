@@ -2,6 +2,7 @@ import { buildCatalogRecords, type CatalogRecords } from '@apex/collection';
 import {
   CompareQuery,
   ConfigurationPayload,
+  LeadCreate,
   LocaleQuery,
   ProductListQuery,
   ShareCode,
@@ -93,6 +94,15 @@ export function createHandlers({ records = buildCatalogRecords(), latencyMs = 0 
     http.get('*/api/v1/configurations/:shareCode', ({ params }) =>
       respond(() => configurator.load(ShareCode.parse(params.shareCode))),
     ),
+
+    // Заявка в режиме моков только проверяется схемой: сохранение и уведомления — забота API
+    http.post('*/api/v1/leads', async ({ request }) => {
+      const body: unknown = await request.json();
+      return respond(() => {
+        LeadCreate.parse(body);
+        return { ok: true as const };
+      }, 201);
+    }),
   ];
 }
 

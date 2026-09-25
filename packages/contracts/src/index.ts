@@ -6,3 +6,4 @@ export * from './product';
 export * from './compare';
 export * from './configuration';
 export * from './lead';
+export * from './admin';

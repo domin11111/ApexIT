@@ -339,5 +339,55 @@
       "w": "W",
       "kw": "kW"
     }
+  },
+  "request": {
+    "metaTitle": "Request a quote",
+    "metaDescription": "Request a quote or information about the flagship server components of the collection.",
+    "eyebrow": "Request",
+    "title": "Tell us about your project",
+    "lead": "A manager will reply within one business day: pricing, lead times and compatibility with your platform.",
+    "intent": {
+      "label": "What you need",
+      "QUOTE": "A quote",
+      "INFO": "Information",
+      "previewOnly": "The request includes a preview product — only information requests are available"
+    },
+    "fields": {
+      "name": "Name",
+      "company": "Company",
+      "email": "Work email",
+      "phone": "Phone",
+      "message": "Message: quantities, timing, workloads",
+      "optional": "optional"
+    },
+    "consent": "I agree to the processing of my personal data to answer this request",
+    "errors": {
+      "name": "Enter your name",
+      "email": "Check the email address",
+      "phone": "Check the phone number",
+      "message": "The message is too long",
+      "consent": "Consent is required",
+      "captcha": "Please confirm you are human",
+      "captchaFailed": "Verification failed — please try again",
+      "rateLimited": "Too many requests from your address — try again in an hour",
+      "notAllowed": "Only information requests are available for preview products",
+      "generic": "Could not send — check your connection and try again"
+    },
+    "attached": {
+      "product": "Product",
+      "configuration": "Configurator build",
+      "loading": "Loading the build…",
+      "missing": "The linked build was not found — you can send the request without it",
+      "open": "Open",
+      "remove": "Remove"
+    },
+    "summary": "{cores} cores · {memory} memory · {vram} GPU memory · ~{power} W",
+    "submit": "Send request",
+    "sending": "Sending…",
+    "success": {
+      "title": "Request sent",
+      "body": "We've got it and will reply to {email} within one business day.",
+      "back": "Back to the collection"
+    }
   }
 }

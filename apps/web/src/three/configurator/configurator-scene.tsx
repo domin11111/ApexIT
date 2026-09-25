@@ -4,11 +4,12 @@ import type { ModelPreset } from '@apex/contracts';
 import { scene } from '@apex/ui/tokens';
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Material, Texture, Vector3 } from 'three';
 import type { Quality } from '@/stores/experience';
 import { createMaterialKit } from '../models/materials';
 import type { ModelIdentity } from '../models/procedural';
+import type { ModelSource } from '../models/product-model';
 import { StudioLights } from '../stage/lights';
 import { LoadBridge } from '../stage/load-bridge';
 import { PostFx } from '../stage/post-fx';
@@ -22,6 +23,8 @@ export type SceneComponent = {
   accent: string;
   identity: ModelIdentity;
   count: number;
+  /** Модель из tools/blender или админки; без неё — процедурная по preset */
+  source?: ModelSource | undefined;
 };
 
 export type ConfiguratorSceneProps = {
@@ -51,7 +54,10 @@ export default function ConfiguratorScene(props: ConfiguratorSceneProps) {
   useEffect(() => {
     const el = container.current;
     if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setInView(Boolean(entry?.isIntersecting)), { rootMargin: '100px' });
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(Boolean(entry?.isIntersecting)),
+      { rootMargin: '100px' },
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -74,9 +80,19 @@ export default function ConfiguratorScene(props: ConfiguratorSceneProps) {
   );
 }
 
-function ServerScene({ layout: layoutInput, accent, cpu, memory, gpu, reducedMotion }: ConfiguratorSceneProps) {
+function ServerScene({
+  layout: layoutInput,
+  accent,
+  cpu,
+  memory,
+  gpu,
+  reducedMotion,
+}: ConfiguratorSceneProps) {
   const { sockets, dimmsPerSocket, gpuSlots } = layoutInput;
-  const layout = useMemo(() => serverLayout({ sockets, dimmsPerSocket, gpuSlots }), [sockets, dimmsPerSocket, gpuSlots]);
+  const layout = useMemo(
+    () => serverLayout({ sockets, dimmsPerSocket, gpuSlots }),
+    [sockets, dimmsPerSocket, gpuSlots],
+  );
 
   // Материалы платы живут, пока не сменится акцент; сама плата пересобирается под раскладку
   const kit = useMemo(() => createMaterialKit(accent), [accent]);
@@ -84,7 +100,8 @@ function ServerScene({ layout: layoutInput, accent, cpu, memory, gpu, reducedMot
     () => () => {
       for (const value of Object.values(kit)) {
         if (!(value instanceof Material)) continue;
-        for (const texture of Object.values(value)) if (texture instanceof Texture) texture.dispose();
+        for (const texture of Object.values(value))
+          if (texture instanceof Texture) texture.dispose();
         value.dispose();
       }
     },
@@ -104,7 +121,10 @@ function ServerScene({ layout: layoutInput, accent, cpu, memory, gpu, reducedMot
 
   // ── Камера: вписать плату, плавно при смене платформы ─────────────────────
   const camera = useThree((s) => s.camera);
-  const orbit = useThree((s) => s.controls) as unknown as { target: Vector3; update: () => void } | null;
+  const orbit = useThree((s) => s.controls) as unknown as {
+    target: Vector3;
+    update: () => void;
+  } | null;
   const size = useThree((s) => s.size);
   const flight = useRef(true);
   const goal = useMemo(() => ({ position: new Vector3(), target: new Vector3() }), []);
@@ -144,42 +164,48 @@ function ServerScene({ layout: layoutInput, accent, cpu, memory, gpu, reducedMot
         }}
       />
       <primitive object={board} />
-      {cpu && (
-        <InstancedModel
-          preset={cpu.preset}
-          accent={cpu.accent}
-          identity={cpu.identity}
-          poses={poses.cpu}
-          capacity={CAPACITY.cpu}
-          drop={3.2}
-          stagger={0.2}
-          reducedMotion={reducedMotion}
-        />
-      )}
-      {memory && (
-        <InstancedModel
-          preset={memory.preset}
-          accent={memory.accent}
-          identity={memory.identity}
-          poses={poses.memory}
-          capacity={CAPACITY.memory}
-          drop={2.4}
-          stagger={0.035}
-          reducedMotion={reducedMotion}
-        />
-      )}
-      {gpu && (
-        <InstancedModel
-          preset={gpu.preset}
-          accent={gpu.accent}
-          identity={gpu.identity}
-          poses={poses.gpu}
-          capacity={CAPACITY.gpu}
-          drop={3}
-          stagger={0.09}
-          reducedMotion={reducedMotion}
-        />
-      )}
+      {/* GLB грузятся асинхронно: плата уже на месте, компоненты влетают, когда модель готова */}
+      <Suspense fallback={null}>
+        {cpu && (
+          <InstancedModel
+            preset={cpu.preset}
+            accent={cpu.accent}
+            identity={cpu.identity}
+            source={cpu.source}
+            poses={poses.cpu}
+            capacity={CAPACITY.cpu}
+            drop={3.2}
+            stagger={0.2}
+            reducedMotion={reducedMotion}
+          />
+        )}
+        {memory && (
+          <InstancedModel
+            preset={memory.preset}
+            accent={memory.accent}
+            identity={memory.identity}
+            source={memory.source}
+            poses={poses.memory}
+            capacity={CAPACITY.memory}
+            drop={2.4}
+            stagger={0.035}
+            reducedMotion={reducedMotion}
+          />
+        )}
+        {gpu && (
+          <InstancedModel
+            preset={gpu.preset}
+            accent={gpu.accent}
+            identity={gpu.identity}
+            source={gpu.source}
+            poses={poses.gpu}
+            capacity={CAPACITY.gpu}
+            drop={3}
+            stagger={0.09}
+            reducedMotion={reducedMotion}
+          />
+        )}
+      </Suspense>
     </>
   );
 }

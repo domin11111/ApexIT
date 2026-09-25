@@ -5,7 +5,8 @@ import nextTs from 'eslint-config-next/typescript';
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores(['.next/**', 'out/**', 'next-env.d.ts', 'public/mockServiceWorker.js']),
+  // public/basis — транскодер Basis из three (копия, не наш код)
+  globalIgnores(['.next/**', 'out/**', 'next-env.d.ts', 'public/mockServiceWorker.js', 'public/basis/**']),
   {
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',

@@ -2,9 +2,10 @@
 
 import type { ModelPreset } from '@apex/contracts';
 import { useGLTF } from '@react-three/drei';
-import { useFrame, type ThreeElements } from '@react-three/fiber';
+import { useFrame, useThree, type ThreeElements } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
-import type { Object3D } from 'three';
+import type { Object3D, WebGLRenderer } from 'three';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { prepareGlb, type ModelManifest } from './glb';
 import { buildProceduralModel, type ModelIdentity } from './procedural';
 import { applyRig, collectRig, disposeModel, type RigControls } from './rig';
@@ -66,14 +67,40 @@ export function useModelUrl(source: ModelSource): string {
   return url;
 }
 
+/**
+ * Один KTX2Loader на рендерер: транскодер Basis (public/basis) грузится один раз.
+ * Пайплайн загрузки сжимает текстуры в KTX2, Meshopt-геометрию useGLTF декодирует сам.
+ */
+const ktx2Loaders = new WeakMap<WebGLRenderer, KTX2Loader>();
+function ktx2For(gl: WebGLRenderer): KTX2Loader {
+  let loader = ktx2Loaders.get(gl);
+  if (!loader) {
+    loader = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(gl);
+    ktx2Loaders.set(gl, loader);
+  }
+  return loader;
+}
+
+/**
+ * Сцена GLB по URL: декодеры Draco и Meshopt (модели tools/blender сжаты Meshopt),
+ * KTX2 — для текстур, сжатых пайплайном загрузки (этап 7). Кэш общий на всё приложение.
+ */
+export function useGlbScene(url: string): Object3D {
+  const gl = useThree((state) => state.gl);
+  const { scene } = useGLTF(url, true, true, (loader) => {
+    // GLTFLoader drei типизирован по three-stdlib; KTX2Loader из three совместим по интерфейсу
+    loader.setKTX2Loader(ktx2For(gl) as unknown as Parameters<typeof loader.setKTX2Loader>[0]);
+  });
+  return scene;
+}
+
 function GlbModel({
   source,
   controls,
   onRoot,
   ...group
 }: GroupProps & { source: ModelSource; controls: RigControls; onRoot?: (root: Object3D) => void }) {
-  // true, true — декодеры Draco и Meshopt (модели из tools/blender сжаты Meshopt)
-  const { scene } = useGLTF(useModelUrl(source), true, true);
+  const scene = useGlbScene(useModelUrl(source));
   const root = useMemo(() => prepareGlb(scene, source.manifest), [scene, source.manifest]);
   return <RiggedObject root={root} controls={controls} onRoot={onRoot} {...group} />;
 }

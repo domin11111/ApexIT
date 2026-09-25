@@ -1,4 +1,4 @@
-# Локальная инфраструктура. S3-хранилище добавим на этапе 7 (пайплайн 3D-моделей).
+# Локальная инфраструктура: БД, кэш, S3-хранилище моделей (RustFS) и перехватчик писем (Mailpit).
 name: apex-compute
 
 services:
@@ -31,6 +31,39 @@ services:
       timeout: 3s
       retries: 10
 
+  # S3-совместимое хранилище для 3D-моделей и картинок (RustFS: образы MinIO больше не публикуются).
+  # Бакет, публичное чтение public/… и CORS для загрузки из браузера создаёт API при старте (S3_AUTO_SETUP).
+  # Консоль — http://localhost:9001
+  s3:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-apex}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-apex-s3-secret}
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - s3data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:9000/health || wget -qO- http://localhost:9000/health']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Все письма API попадают сюда. Веб-интерфейс — http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8025/livez']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   pgdata:
   redisdata:
+  s3data:
