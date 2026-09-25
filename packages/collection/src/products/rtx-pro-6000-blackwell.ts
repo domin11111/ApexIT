@@ -20,7 +20,7 @@ export const rtxPro6000Blackwell: SeedProduct = {
   status: 'AVAILABLE',
   accentColor: accents.gpu.solid,
   modelPreset: 'GPU_DUAL_SLOT',
-  model: { url: '/models/gpu-rtx-pro-6000-se.glb', sizeBytes: 1150072, mobileSizeBytes: 583304, triangles: 10824 },
+  model: { url: '/models/gpu-rtx-pro-6000-se.glb', sizeBytes: 1150080, mobileSizeBytes: 583268, triangles: 10824 },
   sortOrder: 40,
 
   specGroups: [

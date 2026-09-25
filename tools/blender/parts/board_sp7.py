@@ -1,15 +1,20 @@
 """
-Серверная плата SP7 (1P) — по references/components/mb.png и сокету из sp7_sp8.png.
+Серверная плата SP7 (1P, E-ATX) — по references/components/mb.png и сокету из sp7_sp8.png.
 
-Компоновка как на mb.png: сокет в центре, группы слотов DIMM с двух сторон, VRM сбоку от сокета —
-дроссели с металлическими крышками, силовые каскады, бронзовые полимерные конденсаторы, чёрные
-ребристые радиаторы на подпружиненных винтах; коннекторы MCIO и питания в углу, шпильки под кулер.
-Отличие от mb.png осознанное: на референсе 12 + 12 слотов (SP5, 12 каналов × 2DPC), у SP7 —
-16 каналов, поэтому здесь 8 + 8 слотов 1DPC (SLOTS_PER_SIDE).
+Локальная компоновка — как на mb.png: группы слотов DIMM по двум сторонам сокета, VRM у торца
+сокета (дроссели с металлическими крышками, силовые каскады, бронзовые полимерные конденсаторы,
+чёрный ребристый радиатор на подпружиненных винтах), шпильки под кулер. На всей плате — схема
+реальных 1P-плат: DIMM вдоль потока воздуха, задний I/O и брекеты карт на западной кромке,
+слоты PCIe x16 в южной части с шагом двух слотов — полноразмерная видеокарта ложится над свободной
+зоной и не задевает модули памяти.
 
-Плата 330 × 305 × 2,4 мм в плоскости XY, верх — z = 0, север — +Y.
-Узлы: motherboard → board, socket, dimm_slots (dimm_slot_0…15 — якоря), vrm, heatsinks,
-connectors, pcie_slot, bmc, standoffs, parts. Вариант assembled добавляет процессор и модули.
+Отличия от mb.png осознанные: на референсе 12 + 12 слотов (SP5, 12 каналов × 2DPC), у SP7 —
+16 каналов, поэтому здесь 8 + 8 слотов 1DPC.
+
+Плата 330 × 305 × 2,4 мм в плоскости XY, верх — z = 0, север — +Y, задняя кромка — −X.
+Узлы: motherboard → board, socket, dimm_slots, dimm_slot_0…15 (якоря: 0–7 — запад от сокета наружу,
+8–15 — восток), vrm, heatsinks, connectors, pcie_slot (pcie_slot_0/1 — якоря), bmc, standoffs,
+parts, details.
 """
 from __future__ import annotations
 
@@ -28,34 +33,53 @@ NAME = 'board-sp7'
 TEX = bl.BUILD / 'tex' / 'board'
 
 BW, BH, BT = 330.0 * MM, 305.0 * MM, 2.4 * MM
-SX, SY = -20.0 * MM, 0.0  # центр сокета
+SX, SY = 0.0, 32.0 * MM  # центр сокета
 SLOTS_PER_SIDE = 8
 SLOT_PITCH = 7.9 * MM
 SLOT_LEN, SLOT_W, SLOT_H = 142.0 * MM, 6.4 * MM, 7.0 * MM
-SLOT_Y0 = 84.0 * MM  # первый слот от центра сокета
-SLOT_X = SX  # центр слотов по X
-PCIE = [(105.0 * MM, -100.0 * MM), (105.0 * MM, -128.0 * MM)]
-MOUNT_HOLES = [(x * MM, y * MM) for x, y in ((-157, 145), (-157, -145), (157, 145), (157, -145), (-157, 0), (157, 0), (-100, 145), (-100, -145), (60, 145), (60, -145))]
+SLOT_X0 = 73.0 * MM  # первый слот от центра сокета по X
+SLOT_Y = SY  # центр слотов по Y
+# PCIe x16: контакты карты — в 42,4 мм от брекета, брекет — на задней кромке (x = −BW/2)
+PCIE_LEN = 89.0 * MM
+PCIE_X = -BW / 2 + 42.4 * MM + PCIE_LEN / 2
+PCIE_Y = (-64.0 * MM, -64.0 * MM - 40.64 * MM)  # шаг двух слотов
+PCIE_H = 11.2 * MM
+MOUNT_HOLES = [(x * MM, y * MM) for x, y in ((-157, 145), (-157, -145), (157, 145), (157, -145), (-157, -35), (157, 10), (-100, 145), (100, 145), (60, -145), (-135, -145))]
 
 
-def slot_positions() -> list[float]:
-    """Y центров слотов: север (0…7) от сокета наружу, затем юг (8…15)."""
-    north = [SY + SLOT_Y0 + i * SLOT_PITCH for i in range(SLOTS_PER_SIDE)]
-    south = [SY - SLOT_Y0 - i * SLOT_PITCH for i in range(SLOTS_PER_SIDE)]
-    return north + south
+def dimm_slots() -> list[tuple[float, float]]:
+    """Центры слотов (x, y): запад от сокета наружу (0…7), затем восток (8…15)."""
+    west = [(SX - SLOT_X0 - i * SLOT_PITCH, SLOT_Y) for i in range(SLOTS_PER_SIDE)]
+    east = [(SX + SLOT_X0 + i * SLOT_PITCH, SLOT_Y) for i in range(SLOTS_PER_SIDE)]
+    return west + east
 
 
 def chokes() -> list[tuple[float, float]]:
-    """Две колонки дросселей VRM к востоку от сокета."""
-    return [(x * MM, (-52 + i * 15) * MM) for x in (66, 82) for i in range(8)]
+    """Ряд дросселей VRM вдоль северной кромки, у торца сокета."""
+    return [((-70 + i * 14) * MM, 127 * MM) for i in range(11)]
 
 
 def pstages() -> list[tuple[float, float]]:
-    return [(97 * MM, (-52 + i * 15) * MM) for i in range(8)]
+    return [((-70 + i * 14) * MM, 141 * MM) for i in range(11)]
 
 
 def polycaps() -> list[tuple[float, float]]:
-    return [(x * MM, (-60 + i * 15) * MM) for x in (55.5,) for i in range(9)] + [(x * MM, y * MM) for x, y in ((140, 60), (148, 60), (140, -60), (148, -60))]
+    xs = (-70, -62, -38, -30, -22, -14, -6, 6, 14, 22, 30, 38, 62, 70)
+    return [(x * MM, 115 * MM) for x in xs]
+
+
+STUDS = [(sx * 50 * MM, y * MM) for sx in (-1, 1) for y in (112, -48)]
+
+# Для сцены сборки на сайте: где опорные точки деталей стоят над верхом платы (м).
+# Процессор — низ подложки на сжатых контактах сокета; модуль — середина контактов, когда
+# низ планки на 2 мм в пазу слота; карта — середина контактов PCIe, низ на 3 мм в слоте.
+# Размеры (м) — для светящихся трасс поверх платы: рамка сокета и длины слотов.
+EXTRA = {
+    'seat': {'cpu': sock.SEAT_Z, 'memory': 2.0 * MM + 1.6 * MM, 'gpu': 3.0 * MM + 4.2 * MM},
+    'socketFrame': list(sock.FRAME_OUT),
+    'dimmLength': SLOT_LEN,
+    'pcieLength': PCIE_LEN,
+}
 
 
 # ── Текстуры ─────────────────────────────────────────────────────────────────
@@ -101,28 +125,31 @@ def _mm(v):
 
 
 def tex_board(W=4096):
-    """Верх платы: маска, медь под ней (шины памяти, полигоны питания), шелкография, площадки, отверстия."""
+    """Верх платы: маска, медь под ней (шины памяти и PCIe, полигоны питания), шелкография, площадки."""
     Hp = int(W * BH / BW)
     r = tex.rng(7)
     sx, sy = _mm(SX), _mm(SY)
     fw, fh = _mm(sock.FRAME_OUT[0]) / 2, _mm(sock.FRAME_OUT[1]) / 2
+    slots = [(_mm(x), _mm(y)) for x, y in dimm_slots()]
+    slot_half = _mm(SLOT_LEN) / 2
 
-    # Шины памяти: от северного и южного края сокета к слотам, веером с изломами 45°
     tr = Sheet(W, Hp)
-    ys = [_mm(y) for y in slot_positions()]
-    for side in (1, -1):
-        for i in range(90):
-            x0 = sx - fw + 6 + i * (2 * fw - 12) / 90
-            y0 = sy + side * (fh + 1)
-            target = ys[(i // 12) % SLOTS_PER_SIDE + (0 if side > 0 else SLOTS_PER_SIDE)]
-            ym = y0 + side * (3 + (i % 12) * 0.55)
-            tr.line([(x0, y0), (x0, ym), (x0 + side * 0 + (4 if i % 2 else -4), ym + side * 4), (x0 + (4 if i % 2 else -4), target - side * 3.6)], 0.14, 150)
-    # PCIe: пучок к слотам на юго-востоке
-    for i in range(48):
-        x0 = sx + fw - 2 - i * 0.6
-        tr.line([(sx + fw + 1, sy - 30 + i * 0.5), (60 + i * 0.3, sy - 30 + i * 0.5), (75 + i * 0.3, -70), (75 + i * 0.3, _mm(PCIE[0][1]) + 6)], 0.13, 130)
-    # Случайная разводка по свободным зонам
-    for _ in range(420):
+    # Шины памяти: от западной и восточной кромок сокета под слоты, в просветах между слотами видны
+    for side in (-1, 1):
+        edge = sx + side * fw
+        for i in range(70):
+            y0 = sy - fh + 8 + i * (2 * fh - 16) / 70
+            target = slots[(i // 9) % SLOTS_PER_SIDE + (0 if side < 0 else SLOTS_PER_SIDE)][0]
+            jog = 3 + (i % 9) * 0.55
+            tr.line([(edge, y0), (edge + side * jog, y0), (edge + side * (jog + 3), y0 + (2 if i % 2 else -2)), (target + side * 3.5, y0 + (2 if i % 2 else -2))], 0.14, 150)
+    # PCIe: пучок от южной кромки сокета к первому слоту
+    pcie_x0 = _mm(PCIE_X) - _mm(PCIE_LEN) / 2
+    for i in range(40):
+        x0 = sx - fw + 6 + i * 0.9
+        x1 = pcie_x0 + 8 + i * 1.9
+        tr.line([(x0, sy - fh - 1), (x0, sy - fh - 4 - (i % 5) * 0.4), (x1, _mm(PCIE_Y[0]) + 5)], 0.13, 140)
+    # Случайная разводка в свободных зонах
+    for _ in range(460):
         x = r.uniform(-160, 160)
         y = r.uniform(-148, 148)
         if abs(x - sx) < fw + 3 and abs(y - sy) < fh + 3:
@@ -136,11 +163,11 @@ def tex_board(W=4096):
 
     # Полигоны питания VRM и земли — едва заметные светлые пятна под маской
     pw = Sheet(W, Hp)
-    pw.rect(90, 0, 70, 130, 90, radius=4)
+    pw.rect(0, 132, 160, 36, 90, radius=4)
     pw.rect(sx, sy, 2 * fw + 16, 2 * fh + 12, 60, radius=6)
     planes = tex.blur(pw.array(), 6)
 
-    # Медь без маски: кольца крепёжных отверстий, реперы, площадки
+    # Медь без маски: кольца крепёжных отверстий, реперы
     cu = Sheet(W, Hp)
     for x, y in MOUNT_HOLES:
         cu.circle(_mm(x), _mm(y), 4.2)
@@ -155,28 +182,31 @@ def tex_board(W=4096):
     # Шелкография
     silk = Sheet(W, Hp, ss=3)
     silk.text(sx - fw, sy + fh + 2.5, 'CPU0  SP7', 2.4)
-    for i, y in enumerate(ys):
-        ch = 'ABCDEFGHIJKLMNOP'[i]
-        silk.text(_mm(SLOT_X) - _mm(SLOT_LEN) / 2 - 1.5, y - 1.0, f'DIMM{ch}1', 1.5, anchor='ra')
-    silk.text(60, 140, 'JPWR1', 1.8)
-    silk.text(96, 140, 'JPWR2', 1.8)
-    silk.text(-150, 60, 'BMC', 2.0)
-    silk.text(110, -85, 'PCIE1  PCIe 5.0 x16', 1.8)
-    silk.text(110, -113, 'PCIE2  PCIe 5.0 x16', 1.8)
-    silk.text(-150, -120, 'MCIO1', 1.6)
-    silk.text(-150, -100, 'MCIO2', 1.6)
-    silk.text(-158, -150, 'SP7-1P  REV 1.02', 2.2, font='arialbd.ttf')
-    silk.text(-100, -150, 'E-ATX  305 x 330', 1.6)
-    # Контуры компонентов
-    for y in ys:
-        silk.frame(_mm(SLOT_X), y, _mm(SLOT_LEN) + 1.2, _mm(SLOT_W) + 1.2, 0.15)
+    for i, (x, y) in enumerate(slots):
+        silk.text(x, y - slot_half - 7.0, f'{"ABCDEFGHIJKLMNOP"[i]}1', 1.5, anchor='ma')
+    silk.text(-150, -48, 'DIMM A1-H1', 1.6)
+    silk.text(100, -48, 'DIMM I1-P1', 1.6)
+    silk.text(108, 147, 'JPWR1', 1.8)
+    silk.text(133, 147, 'JPWR2', 1.8)
+    silk.text(103, -86, 'BMC', 2.0)
+    for k, y in enumerate(PCIE_Y):
+        silk.text(_mm(PCIE_X) + _mm(PCIE_LEN) / 2 + 9, _mm(y) - 0.9, f'PCIE{k + 1}  PCIe 5.0 x16', 1.8)
+    silk.text(141, 36, 'MCIO1', 1.6)
+    silk.text(141, 104, 'MCIO2', 1.6)
+    silk.text(-118, -128, 'M2_1  NVMe 22110', 1.6)
+    silk.text(70, -150, 'SP7-1P  REV 1.02', 2.2, font='arialbd.ttf')
+    silk.text(118, -150, 'E-ATX  305 x 330', 1.6)
+    for x, y in slots:
+        silk.frame(x, y, _mm(SLOT_W) + 1.2, _mm(SLOT_LEN) + 1.2, 0.15)
     for x, y in chokes():
         silk.frame(_mm(x), _mm(y), 14.2, 14.2, 0.15)
+    for y in PCIE_Y:
+        silk.frame(_mm(PCIE_X), _mm(y), _mm(PCIE_LEN) + 1.2, 8.7, 0.15)
     silk.frame(sx, sy, 2 * fw + 3, 2 * fh + 3, 0.2)
     for x, y in MOUNT_HOLES:
         silk.circle(_mm(x), _mm(y), 5.6, 255)
         silk.circle(_mm(x), _mm(y), 5.3, 0)
-    # Метки ориентации: треугольник первого вывода сокета
+    # Треугольник первого вывода сокета
     tri = [silk.px(sx - fw - 3, sy - fh + 2), silk.px(sx - fw - 3, sy - fh - 2), silk.px(sx - fw - 7, sy - fh - 2)]
     silk.cv.poly(tri, 255)
     silkm = silk.array()
@@ -252,6 +282,28 @@ def tex_thread(size=256):
     return base, rough, np.ones_like(rough), normal
 
 
+def tex_ssd_label(W=1024):
+    """Наклейка SSD M.2 22110: логотип, модель, ёмкость, штрихкод."""
+    lw, lh = 60.0, 20.0
+    Hp = int(W * lh / lw)
+    cv = tex.Canvas(W, Hp, 2)
+    k = W / lw
+    logo = tex.logo_mask('micron_logo', int(3.4 * k * 2))
+    cv.paste_mask(logo, 2.5 * k, 2.0 * k, h=3.0 * k)
+    cv.text(2.5 * k, 7.2 * k, '7500 PRO  3840GB', 'arialbd.ttf', 2.3 * k, 255)
+    cv.text(2.5 * k, 10.4 * k, 'NVMe  PCIe Gen4  M.2 22110', 'arial.ttf', 1.6 * k, 255)
+    cv.text(2.5 * k, 12.8 * k, 'MTFDKBG3T8TFR-1BC1ZABYY', 'arial.ttf', 1.4 * k, 255)
+    tex.barcode(cv, 2.5 * k, 15.0 * k, 34 * k, 3.0 * k, seed=71)
+    tex.datamatrix(cv, 47.0 * k, 5.5 * k, 9.0 * k, n=18, seed=72)
+    ink = cv.array()
+    n = tex.fbm(Hp, W, 5, 3, seed=73)
+    base = np.ones((Hp, W, 3), np.float32) * np.array(tex.hex_rgb('#eeeeea'), np.float32) * (0.97 + 0.04 * n)[..., None]
+    base = tex.mix_rgb(base, np.array(tex.hex_rgb('#151515'), np.float32), ink)
+    rough = 0.45 + 0.08 * n
+    normal = tex.normal_from_height(tex.blur(0.3 * n, 0.6), 0.5)
+    return base, rough, np.zeros_like(rough), normal
+
+
 def save_set(name, parts):
     base, rough, metal, normal = parts[:4]
     tex.save(base, TEX / f'{name}_c.png')
@@ -274,35 +326,34 @@ def pbr(name, tex_name, **kw):
 # ── Геометрия ────────────────────────────────────────────────────────────────
 
 aabb = sock.aabb
+ROT90 = Matrix.Rotation(math.pi / 2, 4, 'Z')
 
 
-def dimm_slot(name, y, mats, parent):
-    """Слот DDR5: корпус с пазом, контакты на дне, башни защёлок с рычагами на торцах."""
+def dimm_slot(name, x, y, mats):
+    """Слот DDR5 вдоль Y: корпус с пазом, контакты на дне, башни защёлок с рычагами на торцах."""
     body_m, latch_m, pin_m = mats
-    x0, x1 = SLOT_X - SLOT_LEN / 2, SLOT_X + SLOT_LEN / 2
+    x0, x1 = -SLOT_LEN / 2, SLOT_LEN / 2
     parts = [
-        aabb('slot_base', x0, x1, y - SLOT_W / 2, y + SLOT_W / 2, 0, 1.8 * MM, [body_m], bevel=0.2 * MM),
+        aabb('slot_base', x0, x1, -SLOT_W / 2, SLOT_W / 2, 0, 1.8 * MM, [body_m], bevel=0.2 * MM),
         bl.prism('slot_walls', bl.rrect(SLOT_LEN, SLOT_W, 0.6 * MM, seg=2), 1.8 * MM, SLOT_H, mats=[body_m], holes=[bl.rrect(SLOT_LEN - 6 * MM, 1.9 * MM, 0.3 * MM, seg=2)], bevel=0.2 * MM, seg=1),
-        # Контакты на дне паза
-        aabb('slot_pins', x0 + 3.2 * MM, x1 - 3.2 * MM, y - 0.8 * MM, y + 0.8 * MM, 1.8 * MM, 2.05 * MM, [pin_m]),
+        aabb('slot_pins', x0 + 3.2 * MM, x1 - 3.2 * MM, -0.8 * MM, 0.8 * MM, 1.8 * MM, 2.05 * MM, [pin_m]),
+        # Ключ DDR5 в пазу
+        aabb('slot_key', 2.2 * MM, 3.6 * MM, -0.95 * MM, 0.95 * MM, 1.8 * MM, 4.2 * MM, [body_m]),
     ]
-    parts[1].data.transform(Matrix.Translation((SLOT_X, y, 0)))
-    # Ключ DDR5 в пазу
-    parts.append(aabb('slot_key', SLOT_X + 2.2 * MM, SLOT_X + 3.6 * MM, y - 0.95 * MM, y + 0.95 * MM, 1.8 * MM, 4.2 * MM, [body_m]))
     for sx in (-1, 1):
-        xe = SLOT_X + sx * (SLOT_LEN / 2 + 2.4 * MM)
-        parts.append(aabb('latch_tower', xe - 2.4 * MM, xe + 2.4 * MM, y - SLOT_W / 2, y + SLOT_W / 2, 0, SLOT_H + 1.0 * MM, [body_m], bevel=0.3 * MM, seg=1))
-        # Рычаг защёлки, закрыт, слегка выступает над башней
-        parts.append(aabb('latch', xe - 1.6 * MM, xe + 1.6 * MM, y - 2.4 * MM, y + 2.4 * MM, SLOT_H + 1.0 * MM, SLOT_H + 4.2 * MM, [latch_m], bevel=0.4 * MM, seg=2))
+        xe = sx * (SLOT_LEN / 2 + 2.4 * MM)
+        parts.append(aabb('latch_tower', xe - 2.4 * MM, xe + 2.4 * MM, -SLOT_W / 2, SLOT_W / 2, 0, SLOT_H + 1.0 * MM, [body_m], bevel=0.3 * MM, seg=1))
+        # Рычаг защёлки закрыт и слегка выступает над башней
+        parts.append(aabb('latch', xe - 1.6 * MM, xe + 1.6 * MM, -2.4 * MM, 2.4 * MM, SLOT_H + 1.0 * MM, SLOT_H + 4.2 * MM, [latch_m], bevel=0.4 * MM, seg=2))
     o = bl.join(parts, name)
-    o.parent = parent
+    o.data.transform(Matrix.Translation((x, y, 0)) @ ROT90)
     return o
 
 
 def heatsink(name, x0, x1, y0, y1, h, fin_axis, mat, parent, pitch=2.6 * MM, fin_t=0.8 * MM):
     base = aabb('hs_base', x0, x1, y0, y1, 0, 3.0 * MM, [mat], bevel=0.4 * MM, seg=1)
     fins = [base]
-    if fin_axis == 'Y':  # рёбра вдоль Y, шаг по X
+    if fin_axis == 'Y':  # рёбра вдоль Y (по потоку воздуха), шаг по X
         n = int((x1 - x0) / pitch)
         for i in range(n + 1):
             x = x0 + i * (x1 - x0 - fin_t) / n
@@ -318,15 +369,12 @@ def heatsink(name, x0, x1, y0, y1, h, fin_axis, mat, parent, pitch=2.6 * MM, fin
 
 
 def spring_screw(x, y, z, steel, spring_m):
-    """Подпружиненный винт радиатора: головка с крестом, пружина, втулка."""
-    parts = []
-    head = bl.cylinder('ss_head', 3.2 * MM, 2.4 * MM, (x, y, z + 7.0 * MM), mats=[steel], verts=24, bevel=0.8 * MM, seg=3)
-    parts.append(head)
-    parts.append(bl.cylinder('ss_sleeve', 2.0 * MM, 7.0 * MM, (x, y, z), mats=[steel], verts=18, bevel=0.2 * MM, seg=1))
-    coil = []
-    for i in range(80):
-        a = i / 80 * 2 * math.pi * 5
-        coil.append((x + 2.9 * MM * math.cos(a), y + 2.9 * MM * math.sin(a), z + 0.6 * MM + i / 80 * 6.2 * MM))
+    """Подпружиненный винт радиатора: головка, пружина, втулка."""
+    parts = [
+        bl.cylinder('ss_head', 3.2 * MM, 2.4 * MM, (x, y, z + 7.0 * MM), mats=[steel], verts=24, bevel=0.8 * MM, seg=3),
+        bl.cylinder('ss_sleeve', 2.0 * MM, 7.0 * MM, (x, y, z), mats=[steel], verts=18, bevel=0.2 * MM, seg=1),
+    ]
+    coil = [(x + 2.9 * MM * math.cos(i / 80 * 2 * math.pi * 5), y + 2.9 * MM * math.sin(i / 80 * 2 * math.pi * 5), z + 0.6 * MM + i / 80 * 6.2 * MM) for i in range(80)]
     parts.append(sock.tube('ss_spring', coil, 0.35 * MM, spring_m, sides=6))
     return parts
 
@@ -342,6 +390,7 @@ def build():
     save_set('pstage', tex_ic(5, 6, [('TDA', 0.8), ('21590', 0.7)], seed=12, Wpx=128))
     save_set('ic_small', tex_ic(8, 8, [('I225', 0.9), ('2631', 0.8)], seed=13, Wpx=256))
     save_set('thread', tex_thread())
+    save_set('ssd_label', tex_ssd_label())
 
     board_m = pbr('board', 'board', coat=0.45, coat_roughness=0.12)
     edge = bl.solid('pcb_edge', bl.srgb('#26241b'), 0.0, 0.7)
@@ -373,16 +422,17 @@ def build():
     bl.uv_planar(board, (-BW / 2, -BH / 2, BW / 2, BH / 2))
 
     # ── Сокет ──
-    socket = sock.build_socket(root, (SX, SY, 0))
+    sock.build_socket(root, (SX, SY, 0))
 
     # ── Слоты DIMM и якоря ──
     slots = bl.empty('dimm_slots', root)
-    for i, y in enumerate(slot_positions()):
-        dimm_slot(f'dimm_slot_mesh_{i}', y, (plastic, latch_m, gold), slots)
-        a = bl.empty(f'dimm_slot_{i}', root, (SLOT_X, y, SLOT_H))
-    bl.join([o for o in slots.children], 'dimm_slot_meshes').parent = slots
+    meshes = []
+    for i, (x, y) in enumerate(dimm_slots()):
+        meshes.append(dimm_slot(f'dimm_slot_mesh_{i}', x, y, (plastic, latch_m, gold)))
+        bl.empty(f'dimm_slot_{i}', root, (x, y, SLOT_H))
+    bl.join(meshes, 'dimm_slot_meshes').parent = slots
 
-    # ── VRM ──
+    # ── VRM у северного торца сокета ──
     vrm = bl.empty('vrm', root)
     parts = []
     for x, y in chokes():
@@ -399,68 +449,71 @@ def build():
     for x, y in polycaps():
         can = bl.cylinder('cap', 4.0 * MM, 7.6 * MM, (x, y, 0.6 * MM), mats=[cap_top, cap_base, cap_side], verts=28, bevel=0.5 * MM, seg=2)
         bl.uv_planar(can, (-4 * MM, -4 * MM, 4 * MM, 4 * MM))
-        base = bl.cylinder('cap_base', 4.3 * MM, 0.8 * MM, (x, y, 0), mats=[cap_base], verts=28, bevel=0.1 * MM, seg=1)
-        parts += [can, base]
+        parts += [can, bl.cylinder('cap_base', 4.3 * MM, 0.8 * MM, (x, y, 0), mats=[cap_base], verts=28, bevel=0.1 * MM, seg=1)]
     bl.join(parts, 'vrm_parts').parent = vrm
 
-    # ── Радиаторы на пружинных винтах ──
+    # ── Радиаторы на пружинных винтах: VRM (над силовыми каскадами) и сетевой контроллер ──
     hs = bl.empty('heatsinks', root)
-    heatsink('vrm_heatsink', 104 * MM, 150 * MM, -64 * MM, 64 * MM, 24 * MM, 'X', hs_m, hs)
-    heatsink('io_heatsink', -150 * MM, -118 * MM, 18 * MM, 48 * MM, 16 * MM, 'Y', hs_m, hs)
+    heatsink('vrm_heatsink', -78 * MM, 78 * MM, 135.5 * MM, 150.5 * MM, 22 * MM, 'Y', hs_m, hs)
+    heatsink('nic_heatsink', 110 * MM, 140 * MM, -149 * MM, -121 * MM, 16 * MM, 'Y', hs_m, hs)
     screws = []
-    for x, y, z in ((110 * MM, 70 * MM, 0), (144 * MM, -70 * MM, 0), (-146 * MM, 54 * MM, 0), (-122 * MM, 12 * MM, 0)):
-        screws += spring_screw(x, y, z, steel, spring_m)
+    for x, y in ((-84 * MM, 143 * MM), (84 * MM, 143 * MM), (105 * MM, -125 * MM), (145 * MM, -145 * MM)):
+        screws += spring_screw(x, y, 0, steel, spring_m)
     bl.join(screws, 'spring_screws').parent = hs
 
     # ── Шпильки под кулер процессора (резьбовые, как на mb.png) ──
     studs = []
-    for dx in (-1, 1):
-        for dy in (-1, 1):
-            x, y = SX + dx * 71 * MM, SY + dy * 48 * MM
-            st = bl.cylinder('stud', 2.4 * MM, 11 * MM, (x, y, 0), mats=[thread_m, steel, thread_m], verts=20, bevel=0.3 * MM, seg=1)
-            _uv_cyl(st)
-            nut = bl.cylinder('stud_base', 3.6 * MM, 2.0 * MM, (x, y, 0), mats=[steel], verts=6, bevel=0.2 * MM, seg=1)
-            studs += [st, nut]
+    for x, y in STUDS:
+        st = bl.cylinder('stud', 2.4 * MM, 11 * MM, (x, y, 0), mats=[thread_m, steel, thread_m], verts=20, bevel=0.3 * MM, seg=1)
+        _uv_cyl(st)
+        studs += [st, bl.cylinder('stud_base', 3.6 * MM, 2.0 * MM, (x, y, 0), mats=[steel], verts=6, bevel=0.2 * MM, seg=1)]
     bl.join(studs, 'standoffs').parent = root
 
-    # ── Коннекторы: питание 8-pin, MCIO, PCIe x16 ──
+    # ── Коннекторы: питание EPS 8-pin, MCIO ──
     conn = bl.empty('connectors', root)
     cparts = []
-    for x in (66 * MM, 98 * MM):
-        cparts.append(aabb('pwr', x - 9.5 * MM, x + 9.5 * MM, 130 * MM, 141 * MM, 0, 12.5 * MM, [nylon], bevel=0.4 * MM, seg=1))
+    for x in (115 * MM, 140 * MM):
+        y = 138 * MM
+        cparts.append(aabb('pwr', x - 9.5 * MM, x + 9.5 * MM, y - 5.5 * MM, y + 5.5 * MM, 0, 12.5 * MM, [nylon], bevel=0.4 * MM, seg=1))
         for i in range(4):
             for j in range(2):
-                px_, py_ = x - 6.3 * MM + i * 4.2 * MM, 133 * MM + j * 4.6 * MM
+                px_, py_ = x - 6.3 * MM + i * 4.2 * MM, y - 2.3 * MM + j * 4.6 * MM
                 cparts.append(aabb('pwr_hole', px_ - 1.7 * MM, px_ + 1.7 * MM, py_ - 1.7 * MM, py_ + 1.7 * MM, 12.5 * MM, 12.55 * MM, [dark]))
-        cparts.append(aabb('pwr_latch', x - 2.5 * MM, x + 2.5 * MM, 141 * MM, 143.5 * MM, 6 * MM, 11 * MM, [nylon], bevel=0.3 * MM))
-    for x, y in ((130 * MM, 132 * MM), (130 * MM, 112 * MM), (-142 * MM, -120 * MM), (-142 * MM, -100 * MM)):
-        cparts.append(aabb('mcio', x - 14 * MM, x + 14 * MM, y - 5 * MM, y + 5 * MM, 0, 6.5 * MM, [nylon], bevel=0.3 * MM))
-        cparts.append(aabb('mcio_shell', x - 13 * MM, x + 13 * MM, y - 3.2 * MM, y + 3.2 * MM, 6.5 * MM, 7.0 * MM, [shell], bevel=0.1 * MM))
-        cparts.append(aabb('mcio_slot', x - 11 * MM, x + 11 * MM, y - 0.8 * MM, y + 0.8 * MM, 7.0 * MM, 7.05 * MM, [dark]))
+        cparts.append(aabb('pwr_latch', x - 2.5 * MM, x + 2.5 * MM, y + 5.5 * MM, y + 8.0 * MM, 6 * MM, 11 * MM, [nylon], bevel=0.3 * MM))
+    for y in (55 * MM, 88 * MM):
+        x = 150 * MM
+        cparts.append(aabb('mcio', x - 5 * MM, x + 5 * MM, y - 14 * MM, y + 14 * MM, 0, 6.5 * MM, [nylon], bevel=0.3 * MM))
+        cparts.append(aabb('mcio_shell', x - 3.2 * MM, x + 3.2 * MM, y - 13 * MM, y + 13 * MM, 6.5 * MM, 7.0 * MM, [shell], bevel=0.1 * MM))
+        cparts.append(aabb('mcio_slot', x - 0.8 * MM, x + 0.8 * MM, y - 11 * MM, y + 11 * MM, 7.0 * MM, 7.05 * MM, [dark]))
     bl.join(cparts, 'connector_parts').parent = conn
+
+    # ── PCIe x16: брекетом карты к задней кромке, фиксатор на дальнем конце ──
     pcie = bl.empty('pcie_slot', root)
     pparts = []
-    for x, y in PCIE:
-        pparts.append(aabb('pcie_body', x - 44.5 * MM, x + 44.5 * MM, y - 3.75 * MM, y + 3.75 * MM, 0, 11.2 * MM, [plastic], bevel=0.3 * MM, seg=1))
-        pparts.append(aabb('pcie_groove', x - 43 * MM, x + 43 * MM, y - 0.9 * MM, y + 0.9 * MM, 11.2 * MM, 11.25 * MM, [dark]))
-        pparts.append(aabb('pcie_ret', x + 44.5 * MM, x + 50 * MM, y - 3.75 * MM, y + 3.75 * MM, 0, 9.5 * MM, [latch_m], bevel=0.3 * MM, seg=1))
+    for k, y in enumerate(PCIE_Y):
+        x = PCIE_X
+        pparts.append(aabb('pcie_body', x - PCIE_LEN / 2, x + PCIE_LEN / 2, y - 3.75 * MM, y + 3.75 * MM, 0, PCIE_H, [plastic], bevel=0.3 * MM, seg=1))
+        pparts.append(aabb('pcie_groove', x - PCIE_LEN / 2 + 1.5 * MM, x + PCIE_LEN / 2 - 1.5 * MM, y - 0.9 * MM, y + 0.9 * MM, PCIE_H, PCIE_H + 0.05 * MM, [dark]))
+        pparts.append(aabb('pcie_ret', x + PCIE_LEN / 2, x + PCIE_LEN / 2 + 5.5 * MM, y - 3.75 * MM, y + 3.75 * MM, 0, 9.5 * MM, [latch_m], bevel=0.3 * MM, seg=1))
+        bl.empty(f'pcie_slot_{k}', root, (x, y, PCIE_H))
     bl.join(pparts, 'pcie_slots').parent = pcie
 
     # ── BMC и мелкие микросхемы, пассивка ──
     bmc = bl.empty('bmc', root)
     b = bl.prism('bmc_chip', bl.rrect(27 * MM, 27 * MM, 0.5 * MM), 0, 2.2 * MM, mats=[bmc_m, bmc_m, mold_side], bevel=0.15 * MM, seg=1)
     bl.uv_planar(b, (-13.5 * MM, -13.5 * MM, 13.5 * MM, 13.5 * MM))
-    b.data.transform(Matrix.Translation((-134 * MM, 80 * MM, 0)))
+    b.data.transform(Matrix.Translation((118 * MM, -100 * MM, 0)))
     b.parent = bmc
     small = []
     r = tex.rng(3)
-    for x, y in ((-140 * MM, -60 * MM), (-120 * MM, -40 * MM), (-150 * MM, 110 * MM), (40 * MM, 120 * MM), (150 * MM, 95 * MM), (-110 * MM, 120 * MM), (70 * MM, -145 * MM)):
+    ics = ((-80, -80), (0, -84), (-40, -120), (90, 124), (150, 124), (-100, 120), (122, -62))
+    for x, y in ics:
         o = bl.prism('ic', bl.rrect(8 * MM, 8 * MM, 0.3 * MM), 0, 1.0 * MM, mats=[ic_m, ic_m, mold_side], bevel=0.08 * MM, seg=1)
         bl.uv_planar(o, (-4 * MM, -4 * MM, 4 * MM, 4 * MM))
-        o.data.transform(Matrix.Translation((x, y, 0)))
+        o.data.transform(Matrix.Translation((x * MM, y * MM, 0)))
         small.append(o)
-    # Пассивка россыпью вокруг микросхем и у краёв (как на mb.png)
-    for cx, cy, n in ((-134, 80, 40), (-140, -60, 18), (-120, -40, 18), (40, 120, 16), (150, 95, 14), (-150, 110, 14), (70, -145, 12), (-60, -150, 20), (20, -150, 20)):
+    # Пассивка россыпью вокруг микросхем (как на mb.png)
+    for cx, cy, n in ((118, -100, 40), (-80, -80, 18), (0, -84, 18), (-40, -120, 14), (90, 124, 12), (-100, 120, 12), (122, -62, 14), (-20, -148, 16), (140, -30, 12)):
         for _ in range(n):
             ang = r.uniform(0, 2 * math.pi)
             rad = r.uniform(12, 22)
@@ -468,16 +521,9 @@ def build():
             if abs(x) > BW / 2 - 5 * MM or abs(y) > BH / 2 - 5 * MM:
                 continue
             l, w, h = (1.6, 0.8, 0.8) if r.random() < 0.4 else (1.0, 0.5, 0.5)
-            t = l * 0.22
-            rot = Matrix.Rotation(r.choice([0, math.pi / 2]), 4, 'Z')
-            body = bl.box('pb', ((l - 2 * t) * MM, w * MM, h * MM), (0, 0, 0), mats=[ceramic])
-            ends = [bl.box('pt', (t * MM, w * MM, h * MM), (s * (l / 2 - t / 2) * MM, 0, 0), mats=[tin]) for s in (-1, 1)]
-            for p in [body] + ends:
-                p.data.transform(Matrix.Translation((x, y, 0)) @ rot)
-                small.append(p)
+            small += mlcc(x, y, bool(r.random() < 0.5), dict(ceramic=ceramic, tin=tin), l * MM, w * MM, h * MM)
     bl.join(small, 'parts').parent = root
 
-    save_set('ssd_label', tex_ssd_label())
     details(root, dict(
         shell=shell, dark=dark, nylon=nylon, gold=gold, ceramic=ceramic, tin=tin, mold_side=mold_side, ic_top=ic_m,
         led_g=bl.solid('led_green', bl.srgb('#1f7a2a'), 0.0, 0.2),
@@ -510,44 +556,22 @@ def build():
     return root
 
 
-def tex_ssd_label(W=1024):
-    """Наклейка SSD M.2 22110: логотип, модель, ёмкость, штрихкод."""
-    lw, lh = 60.0, 20.0
-    Hp = int(W * lh / lw)
-    cv = tex.Canvas(W, Hp, 2)
-    k = W / lw
-    logo = tex.logo_mask('micron_logo', int(3.4 * k * 2))
-    cv.paste_mask(logo, 2.5 * k, 2.0 * k, h=3.0 * k)
-    cv.text(2.5 * k, 7.2 * k, '7500 PRO  3840GB', 'arialbd.ttf', 2.3 * k, 255)
-    cv.text(2.5 * k, 10.4 * k, 'NVMe  PCIe Gen4  M.2 22110', 'arial.ttf', 1.6 * k, 255)
-    cv.text(2.5 * k, 12.8 * k, 'MTFDKBG3T8TFR-1BC1ZABYY', 'arial.ttf', 1.4 * k, 255)
-    tex.barcode(cv, 2.5 * k, 15.0 * k, 34 * k, 3.0 * k, seed=71)
-    tex.datamatrix(cv, 47.0 * k, 5.5 * k, 9.0 * k, n=18, seed=72)
-    ink = cv.array()
-    n = tex.fbm(Hp, W, 5, 3, seed=73)
-    base = np.ones((Hp, W, 3), np.float32) * np.array(tex.hex_rgb('#eeeeea'), np.float32) * (0.97 + 0.04 * n)[..., None]
-    base = tex.mix_rgb(base, np.array(tex.hex_rgb('#151515'), np.float32), ink)
-    rough = 0.45 + 0.08 * n
-    normal = tex.normal_from_height(tex.blur(0.3 * n, 0.6), 0.5)
-    return base, rough, np.zeros_like(rough), normal
-
-
 def details(root, m):
     """Плотность как на mb.png: задний I/O, M.2 с SSD, батарейка, разъёмы, развязка вокруг сокета."""
     parts = []
-    # ── Задний I/O у западного края (порты выступают за кромку платы на 2 мм) ──
+    # ── Задний I/O у западной кромки (порты выступают за кромку на 2 мм), над брекетами карт ──
     xe = -BW / 2 - 2.0 * MM
-    for y in (-24 * MM, -2 * MM):
+    for y in (8 * MM, 30 * MM):
         parts.append(aabb('rj45', xe, xe + 21 * MM, y - 8.1 * MM, y + 8.1 * MM, 0, 13.6 * MM, [m['shell']], bevel=0.3 * MM, seg=1))
         parts.append(aabb('rj45_port', xe - 0.05 * MM, xe + 0.3 * MM, y - 5.9 * MM, y + 5.9 * MM, 1.6 * MM, 11.6 * MM, [m['dark']]))
         for dy, led in ((-5.2 * MM, m['led_g']), (5.2 * MM, m['led_a'])):
             parts.append(aabb('rj45_led', xe - 0.1 * MM, xe + 0.2 * MM, y + dy - 1.1 * MM, y + dy + 1.1 * MM, 11.9 * MM, 13.0 * MM, [led]))
-    y = 20 * MM
+    y = 55 * MM
     parts.append(aabb('usb', xe, xe + 17 * MM, y - 7.3 * MM, y + 7.3 * MM, 0, 15.6 * MM, [m['shell']], bevel=0.3 * MM, seg=1))
     for z in (2.2 * MM, 9.4 * MM):
         parts.append(aabb('usb_port', xe - 0.05 * MM, xe + 0.3 * MM, y - 6.1 * MM, y + 6.1 * MM, z, z + 5.4 * MM, [m['dark']]))
         parts.append(aabb('usb_tongue', xe + 0.1 * MM, xe + 0.5 * MM, y - 5.2 * MM, y + 5.2 * MM, z + 1.0 * MM, z + 2.9 * MM, [m['usb_blue']]))
-    y = -50 * MM
+    y = 85 * MM
     parts.append(aabb('vga', xe + 1.0 * MM, xe + 13 * MM, y - 15.5 * MM, y + 15.5 * MM, 0, 12.5 * MM, [m['vga_blue']], bevel=0.4 * MM, seg=1))
     parts.append(aabb('vga_shell', xe, xe + 1.0 * MM, y - 12 * MM, y + 12 * MM, 1.5 * MM, 11 * MM, [m['shell']], bevel=0.2 * MM))
     for dy in (-12.5 * MM, 12.5 * MM):
@@ -555,37 +579,33 @@ def details(root, m):
         c.data.transform(Matrix.Translation((xe - 2.5 * MM, y + dy, 6.2 * MM)) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))
         parts.append(c)
 
-    # ── M.2 22110 с установленным SSD ──
-    mx, my0 = -108 * MM, -18 * MM
-    parts.append(aabb('m2_conn', mx - 11 * MM, mx + 11 * MM, my0 - 3 * MM, my0 + 3 * MM, 0, 4.2 * MM, [m['nylon']], bevel=0.2 * MM))
-    ly = my0 - 110 * MM
-    parts.append(bl.cylinder('m2_standoff', 2.4 * MM, 2.6 * MM, (mx, ly + 2 * MM, 0), mats=[m['brass']], verts=6, bevel=0.1 * MM))
-    ssd = bl.prism('ssd_pcb', bl.rrect(22 * MM, 110 * MM, 0.4 * MM), 2.6 * MM, 3.4 * MM, mats=[m['ssd_pcb']], bevel=0.1 * MM)
-    ssd.data.transform(Matrix.Translation((mx, my0 - 55 * MM, 0)))
+    # ── M.2 22110 с установленным SSD — вдоль южной кромки, под вторым слотом PCIe ──
+    my = -135 * MM
+    conn_x = 0.0
+    parts.append(aabb('m2_conn', conn_x - 3 * MM, conn_x + 3 * MM, my - 11 * MM, my + 11 * MM, 0, 4.2 * MM, [m['nylon']], bevel=0.2 * MM))
+    parts.append(bl.cylinder('m2_standoff', 2.4 * MM, 2.6 * MM, (conn_x - 110 * MM, my, 0), mats=[m['brass']], verts=6, bevel=0.1 * MM))
+    ssd = bl.prism('ssd_pcb', bl.rrect(110 * MM, 22 * MM, 0.4 * MM), 2.6 * MM, 3.4 * MM, mats=[m['ssd_pcb']], bevel=0.1 * MM)
+    ssd.data.transform(Matrix.Translation((conn_x - 57 * MM, my, 0)))
     parts.append(ssd)
-    for dy in (-22, -45, -70, -93):
-        parts.append(aabb('nand', mx - 7 * MM, mx + 7 * MM, my0 + (dy - 8) * MM, my0 + (dy + 8) * MM, 3.4 * MM, 4.6 * MM, [m['ic_top'], m['ic_top'], m['mold_side']], bevel=0.1 * MM))
-    lab = bl.prism('ssd_label', bl.rrect(20 * MM, 60 * MM, 0.8 * MM), 4.62 * MM, 4.7 * MM, mats=[m['ssd_label'], m['label_edge'], m['label_edge']])
-    # Наклейка вдоль модуля: текст читается при взгляде с запада
-    bl.uv_planar(lab, (-10 * MM, -30 * MM, 10 * MM, 30 * MM))
-    uv = lab.data.uv_layers[0]
-    for d in uv.data:
-        u, v = d.uv
-        d.uv = (1 - v, u)
-    lab.data.transform(Matrix.Translation((mx, my0 - 58 * MM, 0)))
+    for dx in (-24, -47, -72, -95):
+        x = conn_x + dx * MM
+        parts.append(aabb('nand', x - 8 * MM, x + 8 * MM, my - 7 * MM, my + 7 * MM, 3.4 * MM, 4.6 * MM, [m['ic_top'], m['ic_top'], m['mold_side']], bevel=0.1 * MM))
+    lab = bl.prism('ssd_label', bl.rrect(60 * MM, 20 * MM, 0.8 * MM), 4.62 * MM, 4.7 * MM, mats=[m['ssd_label'], m['label_edge'], m['label_edge']])
+    bl.uv_planar(lab, (-30 * MM, -10 * MM, 30 * MM, 10 * MM))
+    lab.data.transform(Matrix.Translation((conn_x - 58 * MM, my, 0)))
     parts.append(lab)
 
     # ── Батарейка CR2032 и перемычки ──
-    parts.append(bl.cylinder('cr2032_holder', 11.5 * MM, 2.2 * MM, (-128 * MM, 124 * MM, 0), mats=[m['nylon']], verts=36, bevel=0.3 * MM, seg=1))
-    parts.append(bl.cylinder('cr2032', 10.0 * MM, 3.2 * MM, (-128 * MM, 124 * MM, 0.6 * MM), mats=[m['battery']], verts=48, bevel=0.4 * MM, seg=2))
-    for i, (x, y) in enumerate(((-110 * MM, 132 * MM), (-104 * MM, 132 * MM), (-98 * MM, 132 * MM))):
-        parts += header(x, y, 1, 3, m, cap=(i != 1))
+    parts.append(bl.cylinder('cr2032_holder', 11.5 * MM, 2.2 * MM, (60 * MM, -120 * MM, 0), mats=[m['nylon']], verts=36, bevel=0.3 * MM, seg=1))
+    parts.append(bl.cylinder('cr2032', 10.0 * MM, 3.2 * MM, (60 * MM, -120 * MM, 0.6 * MM), mats=[m['battery']], verts=48, bevel=0.4 * MM, seg=2))
+    for i, x in enumerate((-110 * MM, -104 * MM, -98 * MM)):
+        parts += header(x, 132 * MM, 1, 3, m, cap=(i != 1))
 
-    # ── Штыревые разъёмы и вентиляторные разъёмы ──
-    parts += header(-150 * MM, 140 * MM, 2, 10, m)
-    parts += header(-150 * MM, 128 * MM, 2, 5, m)
-    parts += header(-60 * MM, -150 * MM, 2, 7, m)
-    for x, y in ((158 * MM, 100 * MM), (158 * MM, 86 * MM), (158 * MM, -86 * MM), (158 * MM, -100 * MM), (-40 * MM, 150 * MM), (30 * MM, -150 * MM)):
+    # ── Штыревые и вентиляторные разъёмы ──
+    parts += header(-140 * MM, 142 * MM, 2, 10, m)
+    parts += header(-140 * MM, 128 * MM, 2, 5, m)
+    parts += header(40 * MM, -148 * MM, 2, 7, m)
+    for x, y in ((158 * MM, -25 * MM), (158 * MM, -40 * MM), (-40 * MM, -150 * MM), (-150 * MM, 112 * MM)):
         vertical = abs(x) > 150 * MM
         w, d = (5.8 * MM, 10.2 * MM) if vertical else (10.2 * MM, 5.8 * MM)
         parts.append(aabb('fan_hdr', x - w / 2, x + w / 2, y - d / 2, y + d / 2, 0, 6.9 * MM, [m['fan_white']], bevel=0.3 * MM, seg=1))
@@ -593,15 +613,17 @@ def details(root, m):
             px_, py_ = (x, y - 3.8 * MM + k * 2.54 * MM) if vertical else (x - 3.8 * MM + k * 2.54 * MM, y)
             parts.append(aabb('fan_pin', px_ - 0.32 * MM, px_ + 0.32 * MM, py_ - 0.32 * MM, py_ + 0.32 * MM, 3.0 * MM, 6.0 * MM, [m['gold']]))
 
-    # ── Развязывающие конденсаторы вдоль рамки сокета ──
-    fx, fy = sock.FRAME_OUT[0] / 2 + 2.4 * MM, sock.FRAME_OUT[1] / 2 + 2.0 * MM
+    # ── Развязывающие конденсаторы в просветах у рамки сокета ──
+    fx, fy = sock.FRAME_OUT[0] / 2 + 2.0 * MM, sock.FRAME_OUT[1] / 2 + 2.0 * MM
     r = tex.rng(9)
     for k in range(34):
         y = SY - fy + 6 * MM + k * (2 * fy - 12 * MM) / 33
-        for x in (SX - fx, SX - fx - 1.8 * MM):
+        for x in (SX - fx, SX - fx - 1.8 * MM, SX + fx, SX + fx + 1.8 * MM):
             parts += mlcc(x, y, True, m)
     for k in range(22):
         x = SX - sock.FRAME_OUT[0] / 2 + 8 * MM + k * 5.2 * MM
+        if abs(abs(x) - 50 * MM) < 5 * MM:
+            continue  # шпильки кулера
         for yy in (SY + fy + 0.6 * MM, SY - fy - 0.6 * MM):
             if r.random() < 0.8:
                 parts += mlcc(x, yy, False, m)
@@ -648,8 +670,8 @@ def _uv_cyl(obj):
 
 
 PREVIEWS = {
-    # Как на mb.png: высоко над платой, со стороны юго-запада
-    'hero': dict(cam=(-0.26, -0.36, 0.34), target=(0.0, 0.0, 0.0), lens=40),
-    'vrm': dict(cam=(0.02, -0.12, 0.12), target=(0.09, 0.0, 0.0), lens=45),
+    # Как на mb.png: высоко над платой, со стороны юго-востока
+    'hero': dict(cam=(0.3, -0.34, 0.36), target=(0.0, 0.01, 0.0), lens=40),
+    'vrm': dict(cam=(0.06, 0.02, 0.13), target=(0.0, 0.12, 0.0), lens=45),
     'top': dict(cam=(0.0, -0.01, 0.62), target=(0, 0, 0), lens=40),
 }

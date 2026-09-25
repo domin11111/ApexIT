@@ -417,7 +417,8 @@ def plate(name, w, h, t, mats, side, x, z, lift=0.0, bevel=0.0, seg=1, r=0.0, pa
     return on_side(o, side, x, z, lift)
 
 
-def build():
+def build(lod: bool = False):
+    """lod — облегчённый модуль для статистов сцены сборки: корпуса без стеков и пассивки."""
     TEX.mkdir(parents=True, exist_ok=True)
     root = bl.empty('rdimm')
 
@@ -472,7 +473,10 @@ def build():
     bl.empty('contacts', root, (0, 0, 1.6 * MM))
 
     # ── Корпуса DRAM с 3DS-стеками ──
-    for side in ('front', 'back'):
+    if lod:
+        molds = [plate('mold', CHIP_W, CHIP_H, CHIP_T, [dram, dram, mold_side], side, x, z, bevel=0.12 * MM, seg=1) for side in ('front', 'back') for x, z in chips()]
+        bl.join(molds, 'chips').parent = root
+    for side in (() if lod else ('front', 'back')):
         sgn = -1 if side == 'front' else 1  # направление наружу по Y
         mold_node = bl.rig(bl.empty(f'{side}_mold', root), explode=(0, sgn * MOLD_FLY, 0), explodeRange=[0.0, 0.55])
         sub_parts, mold_parts = [], []
@@ -510,7 +514,7 @@ def build():
 
     # ── Наклейка на левой группе корпусов (улетает вместе с компаундом) ──
     lab = plate('label', 48.0 * MM, 12.2 * MM, 0.09 * MM, [label_m, label_edge, label_edge], 'front', X0 + 30.0 * MM, 17.3 * MM, lift=CHIP_T + 0.005 * MM, bevel=0.03 * MM, r=1.2 * MM)
-    lab.parent = bpy.data.objects['front_mold']
+    lab.parent = root if lod else bpy.data.objects['front_mold']
 
     # ── RCD (лицо), PMIC и SPD (обратная сторона) ──
     rcd = plate('rcd', RCD['w'], RCD['h'], RCD['t'], [rcd_m, rcd_m, mold_side], 'front', RCD['x'], RCD['z'], bevel=0.1 * MM, seg=2, parent=root)
@@ -524,7 +528,7 @@ def build():
 
     # ── Пассивка ──
     caps = []
-    for side, items in (('front', front_passives()), ('back', back_passives())):
+    for side, items in () if lod else (('front', front_passives()), ('back', back_passives())):
         for kind, x, z, vertical in items:
             l, w, h = (v * MM for v in SIZES[kind])
             parts = _mlcc(l, w, h, ceramic, tin)
@@ -534,15 +538,15 @@ def build():
             for p in parts:
                 on_side(p, side, x, z)
             caps.extend(parts)
-    bl.join(caps, 'passives').parent = root
+    if caps:
+        bl.join(caps, 'passives').parent = root
 
     # ── Светящаяся кромка вдоль верха (сцена сравнения энергопотребления) ──
-    edges = []
-    for side in ('front', 'back'):
-        edges.append(plate('edge', L - 6 * MM, 0.45 * MM, 0.02 * MM, [edge_glow], side, 0, H - 0.9 * MM, uv=False))
-    edge_node = bl.join(edges, 'edge')
-    edge_node.parent = root
-    bl.rig(edge_node, glow='edge', glowMax=1)
+    if not lod:
+        edges = [plate('edge', L - 6 * MM, 0.45 * MM, 0.02 * MM, [edge_glow], side, 0, H - 0.9 * MM, uv=False) for side in ('front', 'back')]
+        edge_node = bl.join(edges, 'edge')
+        edge_node.parent = root
+        bl.rig(edge_node, glow='edge', glowMax=1)
 
     # ── AO платы: запекаем без корпусов в воздухе — они стоят на месте в собранном виде ──
     ao_f = bl.bake_ao([(pcb, pcb_f)], 2048, TEX / 'pcb_front_ao.png', samples=96, distance=2.5 * MM)

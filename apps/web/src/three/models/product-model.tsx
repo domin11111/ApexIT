@@ -60,16 +60,20 @@ function ProceduralModel({
   return <RiggedObject root={root} controls={controls} onRoot={onRoot} {...group} />;
 }
 
+/** URL варианта модели для этого устройства. Выбирается один раз: смена ориентации или окна не перезагружает модель. */
+export function useModelUrl(source: ModelSource): string {
+  const [url] = useState(() => (source.mobileUrl && window.matchMedia(CONSTRAINED).matches ? source.mobileUrl : source.url));
+  return url;
+}
+
 function GlbModel({
   source,
   controls,
   onRoot,
   ...group
 }: GroupProps & { source: ModelSource; controls: RigControls; onRoot?: (root: Object3D) => void }) {
-  // Вариант выбирается один раз: смена ориентации или окна не должна перезагружать модель
-  const [url] = useState(() => (source.mobileUrl && window.matchMedia(CONSTRAINED).matches ? source.mobileUrl : source.url));
   // true, true — декодеры Draco и Meshopt (модели из tools/blender сжаты Meshopt)
-  const { scene } = useGLTF(url, true, true);
+  const { scene } = useGLTF(useModelUrl(source), true, true);
   const root = useMemo(() => prepareGlb(scene, source.manifest), [scene, source.manifest]);
   return <RiggedObject root={root} controls={controls} onRoot={onRoot} {...group} />;
 }

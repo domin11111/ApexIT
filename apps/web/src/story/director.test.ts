@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD } from '@/three/models/procedural/board';
+import { ASSEMBLY, HERO_DIMM } from './assembly';
 import { BEATS, defaultMarks, type SceneId, type StoryClock } from './clock';
 import { direct, type StoryPose } from './director';
 
@@ -81,11 +81,23 @@ describe('режиссёр главной', () => {
     expect(visible(pose)).toEqual(['venice', 'memory', 'gpu']);
     // Плата на широком экране сдвинута вправо — детали встают в её слоты с тем же сдвигом
     expect(pose.board.x).toBeGreaterThan(0);
-    expect(pose.venice.position[0]).toBeCloseTo(pose.board.x + BOARD.socket.x, 5);
-    expect(pose.venice.position[2]).toBeCloseTo(BOARD.socket.z, 5);
-    expect(pose.gpu.position[0]).toBeCloseTo(pose.board.x + BOARD.pcie.x, 5);
-    expect(pose.board.reveal).toBeGreaterThan(3);
+    const { socket, dimms, pcie } = ASSEMBLY;
+    expect(pose.venice.position[0]).toBeCloseTo(pose.board.x + socket.position[0], 5);
+    expect(pose.venice.position[2]).toBeCloseTo(socket.position[2], 5);
+    expect(pose.venice.scale).toBeCloseTo(socket.scale, 5);
+    expect(pose.memory.position[0]).toBeCloseTo(pose.board.x + dimms[HERO_DIMM]!.position[0], 5);
+    expect(pose.memory.rotation[1]).toBeCloseTo(dimms[HERO_DIMM]!.yaw, 5);
+    expect(pose.gpu.position[0]).toBeCloseTo(pose.board.x + pcie[0]!.position[0], 5);
+    expect(pose.board.reveal).toBe(1);
     expect(pose.fillers).toBe(1);
+  });
+
+  it('портрет: плата по центру и меньше, детали — в тех же слотах', () => {
+    const pose = at('assembly', 1, { aspect: 0.46 });
+    expect(pose.board.x).toBe(0);
+    expect(pose.board.scale).toBeLessThan(1);
+    expect(pose.venice.position[0]).toBeCloseTo(ASSEMBLY.socket.position[0] * pose.board.scale, 5);
+    expect(pose.venice.scale).toBeCloseTo(ASSEMBLY.socket.scale * pose.board.scale, 5);
   });
 
   it('скролл обратим: одинаковая позиция — одинаковая поза', () => {

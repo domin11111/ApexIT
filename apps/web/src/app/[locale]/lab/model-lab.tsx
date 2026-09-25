@@ -16,7 +16,7 @@ import { SceneClock } from '@/three/stage/scene-clock';
 
 type LabProduct = { slug: string; label: string; preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource };
 
-const HOTSPOT_NODES = /^(ihs|ccd_\d+|iod_\d+|contacts|dram_stack_\d+|rcd|pmic|spd|gpu_die|vram|heatsink|pcie_edge|io_bracket)$/;
+const HOTSPOT_NODES = /^(ihs|ccd_\d+|iod_\d+|contacts|dram_stack_\d+|rcd|pmic|spd|gpu_die|vram|heatsink|pcie_edge|io_bracket|socket|dimm_slot_\d+|pcie_slot_\d+)$/;
 
 export function ModelLab({ products }: { products: LabProduct[] }) {
   const t = useTranslations('lab');

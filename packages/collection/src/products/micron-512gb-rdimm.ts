@@ -24,7 +24,7 @@ export const micron512gbRdimm: SeedProduct = {
   ],
   accentColor: accents.memory.solid,
   modelPreset: 'RDIMM',
-  model: { url: '/models/rdimm-micron-512gb.glb', sizeBytes: 1399232, mobileSizeBytes: 850620, triangles: 35052 },
+  model: { url: '/models/rdimm-micron-512gb.glb', sizeBytes: 1398844, mobileSizeBytes: 850228, triangles: 35052 },
   sortOrder: 30,
 
   specGroups: [

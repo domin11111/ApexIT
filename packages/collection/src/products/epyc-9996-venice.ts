@@ -27,7 +27,7 @@ export const epyc9996Venice: SeedProduct = {
   accentColor: accents.venice.solid,
   accentColorAlt: accents.venice.alt,
   modelPreset: 'CPU_SP7',
-  model: { url: '/models/cpu-epyc-9996-sp7.glb', sizeBytes: 3892104, mobileSizeBytes: 1325624, triangles: 26132 },
+  model: { url: '/models/cpu-epyc-9996-sp7.glb', sizeBytes: 3891848, mobileSizeBytes: 1325368, triangles: 26132 },
   sortOrder: 10,
 
   specGroups: [

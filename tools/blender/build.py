@@ -152,12 +152,13 @@ def anchors(root) -> dict:
         if o.name.startswith('__'):
             continue
         b = mesh_bounds(descendants(o))
+        origin = norm(to_gltf(o.matrix_world.translation))
         if b:
             blo, bhi = b
             c = (blo + bhi) / 2
-            nodes[o.name] = {'center': norm(c), 'top': norm(Vector((c.x, bhi.y, c.z))), 'front': norm(Vector((c.x, c.y, bhi.z))), 'size': [round(s * scale, 4) for s in (bhi - blo)]}
+            nodes[o.name] = {'origin': origin, 'center': norm(c), 'top': norm(Vector((c.x, bhi.y, c.z))), 'front': norm(Vector((c.x, c.y, bhi.z))), 'size': [round(s * scale, 4) for s in (bhi - blo)]}
         else:
-            nodes[o.name] = {'center': norm(to_gltf(o.matrix_world.translation))}
+            nodes[o.name] = {'origin': origin, 'center': origin}
     tris = 0
     for o in descendants(root):
         if o.type == 'MESH':
@@ -186,12 +187,17 @@ def main() -> None:
     print(f'[build] {part.NAME}: {stats(root)} за {time.time() - t0:.1f} с')
 
     bl.BUILD.mkdir(parents=True, exist_ok=True)
+    # Текстуры внутри .blend: файл открывается сам по себе, без папки .build/tex
+    bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=str(bl.BUILD / f'{part.NAME}.blend'), compress=True)
     info = anchors(root)
+    info['extra'] = getattr(part, 'EXTRA', {})
     (bl.BUILD / f'{part.NAME}.anchors.json').write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding='utf-8')
 
     if not args.no_export:
         set_glow(1.0)
+        if getattr(part, 'MAX_TEXTURE', None):
+            shrink_textures(part.MAX_TEXTURE)
         out = MODELS / f'{part.NAME}.glb'
         bl.export_glb(out, root)
         print(f'[build] GLB {out} — {out.stat().st_size / 1e6:.2f} МБ')
@@ -203,7 +209,7 @@ def main() -> None:
             print(f'[build] превью {p}')
 
     # Мобильный вариант — последним: уменьшение текстур необратимо в пределах сессии
-    if not args.no_export:
+    if not args.no_export and getattr(part, 'MOBILE', True):
         set_glow(1.0)
         shrink_textures(1024)
         out = MODELS / f'{part.NAME}-mobile.glb'
