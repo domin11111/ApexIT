@@ -118,7 +118,10 @@ describe('публичный API каталога', () => {
     expect(venice.compatibility).toEqual([
       { socket: 'SP7', platformName: 'SP7', level: 'SUPPORTED', notes: null },
     ]);
-    expect(venice.models).toEqual([]);
+    expect(venice.models.map((m) => [m.variant, m.url, m.mimeType])).toEqual([
+      ['DESKTOP', '/models/cpu-epyc-9996-sp7.glb', 'model/gltf-binary'],
+      ['MOBILE', '/models/cpu-epyc-9996-sp7-mobile.glb', 'model/gltf-binary'],
+    ]);
   });
 
   it('404 с кодом и request id', async () => {

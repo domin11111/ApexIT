@@ -1,4 +1,4 @@
-import { BOARD } from '@/three/models/procedural/board';
+import { ASSEMBLY, HERO_DIMM, type Mount } from './assembly';
 import {
   beat,
   easeInOut,
@@ -32,12 +32,13 @@ export type StoryPose = {
   gpu: ActorPose & { glow: number };
   /** Поток частиц-данных в видеокарту */
   stream: number;
+  /** traces — яркость светящихся трасс, reveal — доля прорисованной длины (0…1) */
   board: { visibility: number; traces: number; reveal: number; scale: number; x: number };
   /** 0…1 — сколько модулей-статистов уже вставлено в слоты */
   fillers: number;
 };
 
-/** Высота схемы платы в сцене сборки. */
+/** Высота верха платы в сцене сборки. */
 export const BOARD_Y = -0.45;
 
 export type DirectorInput = {
@@ -89,6 +90,15 @@ export function direct({ clock, intro, spin, aspect, accents }: DirectorInput): 
   const zoom = wide ? 1 : 0.72 / Math.max(aspect, 0.5);
   const boardScale = wide ? 1 : 0.62;
   const boardY = BOARD_Y;
+  // На широком экране плата правее — слева колонка текста
+  const boardX = wide ? 0.75 : 0;
+  /** Точка посадочного места в сцене; lift — подъём над ним (в масштабе платы) */
+  const onBoard = (mount: Mount, lift = 0): Vec3 => [
+    boardX + mount.position[0] * boardScale,
+    boardY + (mount.position[1] + lift) * boardScale,
+    mount.position[2] * boardScale,
+  ];
+  const socket = ASSEMBLY.socket;
 
   // Каждая сцена строится поверх предыдущей — кэшируем позы в пределах кадра
   const cache = new Map<SceneId, StoryPose>();
@@ -122,7 +132,7 @@ export function direct({ clock, intro, spin, aspect, accents }: DirectorInput): 
           ghosts: { visibility: 0, spread: 1 },
           gpu: { ...hidden([7, 0.12, 0.2], 1.15, [0.1, -1.2, 0]), glow: 0 },
           stream: 0,
-          board: { visibility: 0, traces: 0, reveal: 0, scale: boardScale, x: wide ? 0.75 : 0 },
+          board: { visibility: 0, traces: 0, reveal: 0, scale: boardScale, x: boardX },
           fillers: 0,
         };
       }
@@ -194,7 +204,7 @@ export function direct({ clock, intro, spin, aspect, accents }: DirectorInput): 
           camera: { position: [0, 1.5, 7 * zoom], target: [0.2 * side, 0.12, 0] },
           stage: { ...base.stage, rim: rim.gpu },
           // Процессоры ждут сцену сборки над кадром — оттуда и опустятся в сокет
-          venice: { ...hidden([BOARD.socket.x, 5, BOARD.socket.z], 0.5), explode: 0, lit: 0 },
+          venice: { ...hidden(onBoard(socket, 5), socket.scale * boardScale, [0, socket.yaw + 0.8, 0]), explode: 0, lit: 0 },
           memory: { ...hidden([-6, 0.15, 0.5], 1.15), explode: 0, tsv: 0, edge: 0 },
           ghosts: { visibility: 0, spread: 0 },
           gpu: {
@@ -208,7 +218,7 @@ export function direct({ clock, intro, spin, aspect, accents }: DirectorInput): 
         };
       }
 
-      // ── 6. Сборка: всё слетается в схему платы, трассы соединяют ──────────
+      // ── 6. Сборка: детали встают в сокет и слоты реальной платы, трассы светятся ──
       case 'assembly': {
         const base = poseIn('gpu');
         const bs = boardScale;
@@ -216,47 +226,27 @@ export function direct({ clock, intro, spin, aspect, accents }: DirectorInput): 
         const memory = easeInOut(beat(clock, 'assembly', 'memory'));
         const gpu = easeInOut(beat(clock, 'assembly', 'gpu'));
         const traces = beat(clock, 'assembly', 'traces');
-        const slot = BOARD.dimms[4]!;
-        const moduleScale = BOARD.dimmLength / 2;
-        // На широком экране плата правее — слева колонка текста
-        const boardX = wide ? 0.75 : 0;
-        const at = (x: number, y: number, z: number): Vec3 => [boardX + x * bs, boardY + y * bs, z * bs];
+        const slot = ASSEMBLY.dimms[HERO_DIMM]!;
+        const pcie = ASSEMBLY.pcie[0]!;
+        /** Деталь над посадочным местом (lift) → в нём */
+        const seat = (mount: Mount, lift: number, turn: number, tilt: number, t: number): ActorPose =>
+          mix<ActorPose>(
+            { position: onBoard(mount, lift), rotation: [0, mount.yaw + turn, tilt], scale: mount.scale * bs, visibility: 1 },
+            { position: onBoard(mount), rotation: [0, mount.yaw, 0], scale: mount.scale * bs, visibility: 1 },
+            t,
+          );
         return {
           ...base,
           camera: {
-            position: [boardX + 2.6 * zoom, 4.4 * zoom, 5.4 * zoom],
-            target: [boardX * 0.45 + 0.1, boardY + 0.1, 0.3 * bs],
+            position: [boardX + 2.3 * zoom, boardY + 5.5 * zoom, 7.1 * zoom],
+            target: [boardX - 1.05 * side, boardY + 0.45, 0],
           },
           stage: { beam: 0, dust: 0, floor: 0, podium: 0, rim: rim.venice },
-          venice: {
-            ...mix<ActorPose>(
-              { position: at(BOARD.socket.x, 2.6, BOARD.socket.z), rotation: [0, 0.8, 0], scale: 0.5 * bs, visibility: 1 },
-              { position: at(BOARD.socket.x, 0.065, BOARD.socket.z), rotation: [0, 0, 0], scale: 0.5 * bs, visibility: 1 },
-              cpu,
-            ),
-            explode: 0,
-            lit: 0,
-          },
-          memory: {
-            ...mix<ActorPose>(
-              { position: at(slot.x, 2.8, slot.z), rotation: [0, Math.PI / 2, 0.4], scale: moduleScale * bs, visibility: 1 },
-              { position: at(slot.x, 0.06 + 0.22 * moduleScale, slot.z), rotation: [0, Math.PI / 2, 0], scale: moduleScale * bs, visibility: 1 },
-              memory,
-            ),
-            explode: 0,
-            tsv: 0,
-            edge: traces,
-          },
-          gpu: {
-            ...mix<ActorPose>(
-              { position: at(BOARD.pcie.x, 3, BOARD.pcie.z), rotation: [0, -0.6, 0], scale: 0.95 * bs, visibility: 1 },
-              { position: at(BOARD.pcie.x, 0.06 + 0.45 * 0.95, BOARD.pcie.z), rotation: [0, 0, 0], scale: 0.95 * bs, visibility: 1 },
-              gpu,
-            ),
-            glow: 1,
-          },
+          venice: { ...seat(socket, 2.6, 0.8, 0, cpu), explode: 0, lit: 0 },
+          memory: { ...seat(slot, 2.8, 0, 0.4, memory), explode: 0, tsv: 0, edge: traces },
+          gpu: { ...seat(pcie, 3, -0.6, 0, gpu), glow: 1 },
           stream: 0,
-          board: { visibility: 1, traces: traces > 0 ? 1 : 0, reveal: traces * 3.6, scale: bs, x: boardX },
+          board: { visibility: 1, traces: traces > 0 ? 1 : 0, reveal: traces, scale: bs, x: boardX },
           fillers: memory,
         };
       }
@@ -266,7 +256,7 @@ export function direct({ clock, intro, spin, aspect, accents }: DirectorInput): 
         const base = poseIn('assembly');
         return {
           ...base,
-          camera: { position: [base.board.x + 3.2 * zoom, 6.2 * zoom, 7.2 * zoom], target: [base.board.x * 0.5, boardY - 0.4, 0] },
+          camera: { position: [base.board.x + 3.4 * zoom, boardY + 8.4 * zoom, 9.6 * zoom], target: [base.board.x * 0.5, boardY - 0.2, 0] },
           board: { ...base.board, traces: 0.55 },
         };
       }

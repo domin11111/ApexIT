@@ -2,25 +2,25 @@
 
 import type { ModelPreset } from '@apex/contracts';
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
-import { Color, MathUtils, type Group, type Material, type ShaderMaterial, type Vector3 } from 'three';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Color, MathUtils, type Group, type Vector3 } from 'three';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
 import { gsap } from '@/lib/gsap';
 import { scrollState, storyClock, useExperience, type Quality } from '@/stores/experience';
-import { BOARD_Y, direct, type ActorPose, type StoryPose, type Vec3 } from '@/story/director';
+import { direct, type ActorPose, type StoryPose, type Vec3 } from '@/story/director';
 import { createMaterialKit } from '../models/materials';
-import { BOARD, buildRdimmSimple, type ModelIdentity } from '../models/procedural';
-import { buildBoard } from '../models/procedural/board';
-import { ProductModel } from '../models/product-model';
-import { applyRig, collectRig, createRigControls, disposeModel } from '../models/rig';
+import { buildRdimmSimple, type ModelIdentity } from '../models/procedural';
+import { ProductModel, type ModelSource } from '../models/product-model';
+import { createRigControls, disposeModel } from '../models/rig';
 import { LightBeam } from '../stage/beam';
 import { DataStream } from '../stage/data-stream';
 import { Dust } from '../stage/dust';
 import { StudioLights } from '../stage/lights';
 import { Podium } from '../stage/podium';
 import { TraceField } from '../stage/trace-field';
+import { AssemblyBoard } from './assembly-board';
 
-export type StoryModel = { preset: ModelPreset; accent: string; accentAlt: string | null; identity: ModelIdentity };
+export type StoryModel = { preset: ModelPreset; accent: string; accentAlt: string | null; identity: ModelIdentity; source?: ModelSource };
 export type StoryModels = { venice: StoryModel; turin: StoryModel; memory: StoryModel; gpu: StoryModel };
 
 const GHOST_X = [-2.25, -0.75, 0.75, 2.25];
@@ -31,21 +31,6 @@ function applyPose(group: Group | null, pose: ActorPose) {
   group.rotation.set(...pose.rotation);
   group.scale.setScalar(Math.max(pose.scale, 1e-4));
   group.visible = pose.visibility > 0.01;
-}
-
-/** Плавная прозрачность группы: все материалы становятся прозрачными, базовая непрозрачность запоминается. */
-function fadeable(root: Group): Material[] {
-  const materials = new Set<Material>();
-  root.traverse((node) => {
-    const material = (node as { material?: Material | Material[] }).material;
-    for (const m of Array.isArray(material) ? material : material ? [material] : []) {
-      if ('uniforms' in m) continue; // шейдеры трасс управляют яркостью сами
-      m.userData.baseOpacity ??= m.opacity;
-      m.transparent = true;
-      materials.add(m);
-    }
-  });
-  return [...materials];
 }
 
 /**
@@ -76,29 +61,16 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
     [],
   );
 
-  // ── Статисты и плата: лёгкие модели, собираются один раз ─────────────────
+  // ── Четыре тусклых модуля сцены памяти: лёгкие процедурные, собираются один раз ──
   const extras = useMemo(() => {
     const dimKit = createMaterialKit(models.memory.accent);
-    const kit = createMaterialKit(models.venice.accent);
     const ghosts = GHOST_X.map(() => buildRdimmSimple(dimKit, { dim: true }));
-    const fillers = BOARD.dimms.filter((_, i) => i !== 4).map(() => buildRdimmSimple(kit));
-    const board = buildBoard(kit);
-    const boardTraces = board.getObjectByName('traces_mesh') as unknown as { material: ShaderMaterial };
-    return {
-      ghosts,
-      ghostMaterials: [dimKit.dimPcb, dimKit.dimMold],
-      fillers,
-      board,
-      boardRig: collectRig(board),
-      boardMaterials: fadeable(board),
-      boardTraces: boardTraces.material,
-      boardControls: createRigControls(),
-    };
-  }, [models.memory.accent, models.venice.accent]);
+    return { ghosts, ghostMaterials: [dimKit.dimPcb, dimKit.dimMold] };
+  }, [models.memory.accent]);
 
   useEffect(
     () => () => {
-      for (const root of [...extras.ghosts, ...extras.fillers, extras.board]) disposeModel(root);
+      for (const root of extras.ghosts) disposeModel(root);
     },
     [extras],
   );
@@ -180,28 +152,6 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
       ghost.scale.setScalar((wide ? 0.62 : 0.3) * (0.4 + 0.6 * p.ghosts.spread));
     });
     for (const material of extras.ghostMaterials) material.opacity = 0.85 * p.ghosts.visibility;
-
-    // Плата и модули-заполнители в слотах
-    const board = extras.board;
-    board.visible = p.board.visibility > 0.01;
-    board.position.set(p.board.x, BOARD_Y, 0);
-    board.scale.setScalar(p.board.scale * (0.9 + 0.1 * p.board.visibility));
-    for (const material of extras.boardMaterials) material.opacity = (material.userData.baseOpacity as number) * p.board.visibility;
-    extras.boardControls.glow.board = p.board.traces;
-    extras.boardTraces.uniforms.uReveal!.value = p.board.reveal;
-    applyRig(extras.boardRig, extras.boardControls, delta);
-
-    const slots = BOARD.dimms.filter((_, i) => i !== 4);
-    const bs = p.board.scale;
-    extras.fillers.forEach((filler, i) => {
-      const slot = slots[i]!;
-      const t = MathUtils.clamp((p.fillers - i * 0.07) / (1 - 6 * 0.07), 0, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      filler.visible = p.board.visibility > 0.01 && t > 0;
-      filler.position.set(p.board.x + slot.x * bs, BOARD_Y + MathUtils.lerp(2.6, 0.06 + 0.22 * (BOARD.dimmLength / 2), eased) * bs, slot.z * bs);
-      filler.rotation.set(0, Math.PI / 2, (1 - eased) * 0.4);
-      filler.scale.setScalar((BOARD.dimmLength / 2) * bs);
-    });
   });
 
   const stage = () => pose.current?.stage;
@@ -248,10 +198,13 @@ export function StoryScene({ models, quality }: { models: StoryModels; quality: 
       {extras.ghosts.map((ghost, i) => (
         <primitive key={`ghost-${i}`} object={ghost} visible={false} />
       ))}
-      {extras.fillers.map((filler, i) => (
-        <primitive key={`filler-${i}`} object={filler} visible={false} />
-      ))}
-      <primitive object={extras.board} visible={false} />
+
+      {/* Плата сцены сборки грузится после прелоадера: первому экрану она не нужна */}
+      {phase !== 'loading' && (
+        <Suspense fallback={null}>
+          <AssemblyBoard accent={models.venice.accent} getPose={() => pose.current} />
+        </Suspense>
+      )}
     </>
   );
 }

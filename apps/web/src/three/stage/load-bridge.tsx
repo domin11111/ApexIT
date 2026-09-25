@@ -8,15 +8,31 @@ import { useExperience } from '@/stores/experience';
 /**
  * Передаёт прелоадеру реальный прогресс загрузки 3D-ассетов (useProgress из drei).
  * Если грузить нечего (процедурные модели) — сообщаем 100% после первого отрисованного кадра.
+ *
+ * Подписка — без хука: useGLTF начинает загрузку во время рендера модели, и менеджер загрузки
+ * обновляет стор прогресса синхронно. Хук useProgress здесь дал бы setState посреди чужого рендера,
+ * поэтому читаем стор напрямую и переносим обновление на следующий кадр.
  */
 export function LoadBridge() {
-  const { active, total, progress } = useProgress();
   const setSceneProgress = useExperience((s) => s.setSceneProgress);
   const firstFrame = useRef(false);
 
   useEffect(() => {
-    if (total > 0) setSceneProgress(active ? progress / 100 : 1);
-  }, [active, total, progress, setSceneProgress]);
+    let raf = 0;
+    const push = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const { active, total, progress } = useProgress.getState();
+        if (total > 0) setSceneProgress(active ? progress / 100 : 1);
+      });
+    };
+    push();
+    const unsubscribe = useProgress.subscribe(push);
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(raf);
+    };
+  }, [setSceneProgress]);
 
   useFrame(() => {
     if (firstFrame.current) return;

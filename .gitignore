@@ -25,3 +25,8 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Blender: зависимости Python и промежуточные файлы сборки моделей
+tools/blender/.deps/
+tools/blender/.build/
+__pycache__/

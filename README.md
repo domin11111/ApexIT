@@ -22,6 +22,7 @@ Micron 512GB DDR5 RDIMM, NVIDIA RTX PRO 6000 Blackwell.
 │  ├─ mocks/                  MSW-обработчики /api/v1 для фронта до готовности бэкенда
 │  ├─ ui/                     дизайн-токены (TS + CSS для Tailwind 4), позже — компоненты
 │  └─ config/                 общие tsconfig и ESLint
+├─ tools/blender/             сборка 3D-моделей деталей в Blender → apps/web/public/models
 ├─ docker-compose.yml         PostgreSQL 17, Redis 7
 └─ turbo.json
 ```
@@ -121,9 +122,16 @@ pnpm --filter @apex/web dev       # http://localhost:3000 (ru), /en — англ
 модель к нашим осям, переименовывает узлы и добавляет разметку разлёта. Масштаб нормализуется
 автоматически. Для моделей под CC-BY в манифесте указывается автор — он выводится в титрах.
 
-Модель RTX PRO 6000 Blackwell — **Server Edition** (пассивная, корпус цвета шампанского
-с оребрением, графитовая кромка с логотипом), собрана по фото NVIDIA: публичной 3D-модели именно
-этой версии нет, а на маркетплейсах есть только Workstation Edition с вентилятором.
+Продукты коллекции используют GLB из `apps/web/public/models` (собираются в Blender, см. ниже):
+EPYC 9996 «Venice» (SP7), EPYC 9965 (SP5), Micron 512GB DDR5 RDIMM, RTX PRO 6000 Blackwell
+**Server Edition**. Модель задаётся в коллекции (`model` продукта) и приходит в API ассетом GLB
+с вариантом MOBILE — те же модели с текстурами до 1024 px. Сцена выбирает мобильный вариант
+на сенсорных экранах и в окне уже 768 px (`lib/model-source.ts`, `GlbModel`). Хотспоты продуктов
+пересчитаны по геометрии GLB. Процедурные модели остаются запасным вариантом для продуктов без GLB
+и статистами сцены памяти (четыре тусклых модуля). Сцена сборки — на реальной плате SP7 (GLB):
+процессор, модуль и видеокарта встают в её сокет и слоты в настоящих пропорциях, остальные 15 слотов
+занимают облегчённые модули (`rdimm-micron-512gb-lod.glb`, 2 тыс. треугольников), поверх текстолита
+светятся трассы к банкам памяти и слотам PCIe. Плата грузится после прелоадера и не задерживает первый экран.
 
 ### Страницы продуктов
 
@@ -152,6 +160,42 @@ pnpm --filter @apex/web dev       # http://localhost:3000 (ru), /en — англ
 ScrollTrigger. Отключить для ссылки — `data-transition="off"`, подпись на шторке —
 `data-transition-label`.
 
+## 3D-модели в Blender
+
+Детали сервера собираются кодом в `tools/blender`: геометрия в реальных размерах, PBR-материалы,
+текстуры (маркировка, снимки кристаллов, запечённый AO) и экспорт в GLB полностью воспроизводимы.
+Референсы — `references/components`, логотипы — SVG с Wikimedia Commons в `tools/blender/logos`.
+Нужен Blender 5.2; ниже `<Blender>` — папка установки (у нас Steam: `D:/SteamLibrary/steamapps/common/Blender`).
+
+```bash
+# один раз: Pillow и svgelements для Python внутри Blender — в tools/blender/.deps
+"<Blender>/5.2/python/bin/python.exe" -m pip install --target tools/blender/.deps Pillow svgelements
+# деталь → apps/web/public/models/<имя>.glb и <имя>-mobile.glb; .blend (текстуры упакованы внутрь)
+# и отчёт с опорными точками узлов — в tools/blender/.build
+"<Blender>/blender.exe" -b --factory-startup -P tools/blender/build.py -- cpu_sp7 --preview hero delid
+# после пересборки: размеры моделей в коллекции (тест apps/web сверяет их с файлами) и раскладка
+# сцены сборки apps/web/src/three/models/assembly-layout.json — сокет, слоты, контакты деталей
+python tools/blender/sync_collection.py
+```
+
+| Деталь | Модуль | GLB, МБ (desktop / mobile) | Треугольники |
+|---|---|---|---|
+| AMD EPYC 9996 «Venice», SP7 | `cpu_sp7` | 3,9 / 1,3 | 26 тыс. |
+| AMD EPYC 9965, SP5 | `cpu_sp5` | 3,2 / 1,1 | 21 тыс. |
+| Micron 512GB DDR5 RDIMM | `rdimm` | 1,4 / 0,85 | 35 тыс. |
+| RTX PRO 6000 Blackwell Server Edition | `gpu_rtx_pro_6000` | 1,15 / 0,58 | 11 тыс. |
+| Сокет SP7 с механизмом SRM | `socket_sp7` | 3,4 / 0,75 | 10 тыс. |
+| Серверная плата SP7 (1P, 16 DIMM) | `board_sp7` | 4,5 / 1,5 | 55 тыс. |
+| Micron RDIMM, облегчённая (статисты) | `rdimm_lod` | 0,29 / — | 2 тыс. |
+
+Плата и сокет — не товары каталога: плата работает в сцене сборки, обе детали есть в `/lab`.
+Раскладка платы повторяет серверные 1P-платы SP7: сокет по центру, по 8 слотов DIMM с запада
+и востока, VRM на севере, два слота PCIe x16 на юге (контакты карты FHFL — в 42,4 мм от брекета
+на задней кромке, поэтому видеокарта не задевает банки памяти).
+`--preview` рендерит в Cycles виды из `PREVIEWS` модуля в студии, повторяющей свет сайта
+(ACES, панели-Lightformer). Ограничения для three.js: без `KHR_materials_anisotropy` (без касательных
+раздувает блики, и bloom делает из них ореол), материалы односторонние, сжатие Meshopt, текстуры WebP.
+
 ## Договорённости
 
 - **Локализация в БД.** Базовые текстовые колонки — на ru, переводы — в JSON-колонке `i18n`
@@ -166,6 +210,6 @@ ScrollTrigger. Отключить для ссылки — `data-transition="off"
 
 ## Товарные знаки
 
-AMD, EPYC, Micron, NVIDIA, RTX, Blackwell — товарные знаки их владельцев. До получения прав
-на пресс-материалы используются собственные стилизованные 3D-модели без логотипов.
+AMD, EPYC, Micron, NVIDIA, RTX, Blackwell — товарные знаки их владельцев. GLB-модели воспроизводят
+маркировку и логотипы реальных изделий; процедурные модели — стилизованные, без логотипов.
 Характеристики неанонсированных и preview-продуктов могут измениться.

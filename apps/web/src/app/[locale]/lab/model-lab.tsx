@@ -5,17 +5,18 @@ import { scene, type LightingPreset } from '@apex/ui/tokens';
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import type { Object3D } from 'three';
 import { buildProceduralModel, CPU_CCD_COUNT, type ModelIdentity } from '@/three/models/procedural';
-import { ProductModel } from '@/three/models/product-model';
+import { ProductModel, type ModelSource } from '@/three/models/product-model';
 import { createRigControls, nodeNames } from '@/three/models/rig';
 import { StudioLights } from '@/three/stage/lights';
 import { PostFx } from '@/three/stage/post-fx';
 import { SceneClock } from '@/three/stage/scene-clock';
 
-type LabProduct = { slug: string; label: string; preset: ModelPreset; accent: string; identity: ModelIdentity };
+type LabProduct = { slug: string; label: string; preset: ModelPreset; accent: string; identity: ModelIdentity; source?: ModelSource };
 
-const HOTSPOT_NODES = /^(ihs|ccd_\d+|iod_\d+|contacts|dram_stack_\d+|rcd|pmic|spd|gpu_die|vram|heatsink|pcie_edge|io_bracket)$/;
+const HOTSPOT_NODES = /^(ihs|ccd_\d+|iod_\d+|contacts|dram_stack_\d+|rcd|pmic|spd|gpu_die|vram|heatsink|pcie_edge|io_bracket|socket|dimm_slot_\d+|pcie_slot_\d+)$/;
 
 export function ModelLab({ products }: { products: LabProduct[] }) {
   const t = useTranslations('lab');
@@ -24,7 +25,10 @@ export function ModelLab({ products }: { products: LabProduct[] }) {
   const [glow, setGlow] = useState(0.6);
   const [spin, setSpin] = useState(true);
   const [lighting, setLighting] = useState<LightingPreset>('studio');
+  const [glb, setGlb] = useState(true);
+  const [glbNodes, setGlbNodes] = useState<string[]>([]);
   const product = products.find((p) => p.slug === slug) ?? products[0];
+  const source = glb ? product?.source : undefined;
 
   // Один изменяемый объект на всё время жизни лаборатории — модель читает его каждый кадр
   const [controls] = useState(() => createRigControls());
@@ -34,10 +38,13 @@ export function ModelLab({ products }: { products: LabProduct[] }) {
     controls.glow = { ccd: glow, iod: glow * 0.6, traces: glow, tsv: glow, die: glow, vram: glow * 0.5, lightbar: glow };
   }, [controls, explode, spin, glow]);
 
+  // Узлы для хотспотов: у GLB — из загруженной модели, у процедурной — из построенной заново
+  const onRoot = useCallback((root: Object3D) => setGlbNodes([...nodeNames(root)]), []);
   const anchors = useMemo(() => {
     if (!product) return [];
-    return [...nodeNames(buildProceduralModel(product.preset, product.accent))].filter((n) => HOTSPOT_NODES.test(n)).sort();
-  }, [product]);
+    const names = source ? glbNodes : [...nodeNames(buildProceduralModel(product.preset, product.accent))];
+    return names.filter((n) => HOTSPOT_NODES.test(n)).sort();
+  }, [product, source, glbNodes]);
 
   if (!product) return null;
 
@@ -47,7 +54,17 @@ export function ModelLab({ products }: { products: LabProduct[] }) {
         <color attach="background" args={[scene.clearColor]} />
         <SceneClock />
         <StudioLights accent={product.accent} preset={lighting} />
-        <ProductModel key={product.slug} preset={product.preset} accent={product.accent} identity={product.identity} controls={controls} />
+        <Suspense fallback={null}>
+          <ProductModel
+            key={`${product.slug}:${source ? 'glb' : 'procedural'}`}
+            preset={product.preset}
+            accent={product.accent}
+            identity={product.identity}
+            source={source}
+            controls={controls}
+            onRoot={source ? onRoot : undefined}
+          />
+        </Suspense>
         <OrbitControls enableDamping makeDefault minDistance={1.6} maxDistance={9} />
         <PostFx quality="high" />
       </Canvas>
@@ -77,6 +94,12 @@ export function ModelLab({ products }: { products: LabProduct[] }) {
           <input type="checkbox" checked={spin} onChange={(e) => setSpin(e.target.checked)} />
           {t('spin')}
         </label>
+        {product.source && (
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={glb} onChange={(e) => setGlb(e.target.checked)} />
+            {t('glb')} <span className="font-mono text-caption text-fg-tertiary">{product.source.url.split('/').pop()}</span>
+          </label>
+        )}
         <label className="block space-y-1">
           <span className="eyebrow">{t('lighting')}</span>
           <select className="w-full rounded-sm bg-elevated px-2 py-1" value={lighting} onChange={(e) => setLighting(e.target.value as LightingPreset)}>

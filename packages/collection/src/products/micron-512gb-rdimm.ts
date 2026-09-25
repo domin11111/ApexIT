@@ -24,6 +24,7 @@ export const micron512gbRdimm: SeedProduct = {
   ],
   accentColor: accents.memory.solid,
   modelPreset: 'RDIMM',
+  model: { url: '/models/rdimm-micron-512gb.glb', sizeBytes: 1398844, mobileSizeBytes: 850228, triangles: 35052 },
   sortOrder: 30,
 
   specGroups: [
@@ -127,9 +128,9 @@ export const micron512gbRdimm: SeedProduct = {
     {
       key: 'dram-stack',
       anchorNode: 'dram_stack_0',
-      position: [-0.62, 0.06, 0.04],
-      cameraPosition: [-0.4, 0.35, 0.9],
-      cameraTarget: [-0.62, 0.04, 0.02],
+      position: [-0.89, 0.135, 0.03],
+      cameraPosition: [-0.6, 0.4, 0.9],
+      cameraTarget: [-0.89, 0.13, 0.02],
       title: ['Стек DRAM с TSV', 'TSV DRAM stack'],
       body: [
         'Кристаллы DRAM уложены вертикально и соединены сквозными кремниевыми переходами — так в одном корпусе помещается в разы больше памяти.',
@@ -139,8 +140,8 @@ export const micron512gbRdimm: SeedProduct = {
     {
       key: 'rcd',
       anchorNode: 'rcd',
-      position: [0, 0.02, 0.04],
-      cameraPosition: [0.1, 0.3, 0.8],
+      position: [0, -0.06, 0.025],
+      cameraPosition: [0.1, 0.2, 0.8],
       title: ['Регистровый буфер (RCD)', 'Registering clock driver (RCD)'],
       body: [
         'Буферизует команды и адреса, чтобы сервер стабильно работал с модулями огромной ёмкости.',
@@ -150,8 +151,8 @@ export const micron512gbRdimm: SeedProduct = {
     {
       key: 'pmic',
       anchorNode: 'pmic',
-      position: [0.78, 0.12, 0.04],
-      cameraPosition: [0.9, 0.35, 0.7],
+      position: [0, 0.03, -0.02],
+      cameraPosition: [0.2, 0.35, -0.85],
       title: ['Контроллер питания (PMIC)', 'Power management IC (PMIC)'],
       body: [
         'В DDR5 питание регулируется прямо на модуле. Все 512 ГБ потребляют лишь 16 Вт.',
@@ -161,7 +162,7 @@ export const micron512gbRdimm: SeedProduct = {
     {
       key: 'contacts',
       anchorNode: 'contacts',
-      position: [0.3, -0.22, 0.01],
+      position: [0.3, -0.21, 0.01],
       cameraPosition: [0.5, -0.5, 0.9],
       title: ['288 контактов', '288 contacts'],
       body: [

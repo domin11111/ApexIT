@@ -27,6 +27,7 @@ export const epyc9996Venice: SeedProduct = {
   accentColor: accents.venice.solid,
   accentColorAlt: accents.venice.alt,
   modelPreset: 'CPU_SP7',
+  model: { url: '/models/cpu-epyc-9996-sp7.glb', sizeBytes: 3891848, mobileSizeBytes: 1325368, triangles: 26132 },
   sortOrder: 10,
 
   specGroups: [
@@ -143,7 +144,7 @@ export const epyc9996Venice: SeedProduct = {
     {
       key: 'ihs',
       anchorNode: 'ihs',
-      position: [0, 0.13, 0],
+      position: [0, 0.075, 0],
       cameraPosition: [1.6, 1.5, 1.9],
       cameraTarget: [0, 0, 0],
       visibility: 'ASSEMBLED',
@@ -156,9 +157,9 @@ export const epyc9996Venice: SeedProduct = {
     {
       key: 'ccd',
       anchorNode: 'ccd_0',
-      position: [-0.5, 0.05, -0.32],
-      cameraPosition: [-0.9, 0.9, 0.5],
-      cameraTarget: [-0.5, 0.03, -0.32],
+      position: [-0.41, 0, -0.43],
+      cameraPosition: [-0.85, 0.85, 0.3],
+      cameraTarget: [-0.41, 0, -0.43],
       visibility: 'EXPLODED',
       title: ['Чиплет Zen 6c', 'Zen 6c chiplet'],
       body: [
@@ -169,9 +170,9 @@ export const epyc9996Venice: SeedProduct = {
     {
       key: 'io-die',
       anchorNode: 'iod_0',
-      position: [0, 0.05, 0.1],
-      cameraPosition: [0.4, 1.1, 1.0],
-      cameraTarget: [0, 0.03, 0.1],
+      position: [-0.27, 0, 0],
+      cameraPosition: [0.2, 1.1, 1.0],
+      cameraTarget: [-0.27, 0, 0],
       visibility: 'EXPLODED',
       title: ['I/O-кристаллы', 'I/O dies'],
       body: [
@@ -182,7 +183,7 @@ export const epyc9996Venice: SeedProduct = {
     {
       key: 'contacts',
       anchorNode: 'contacts',
-      position: [0.6, -0.07, 0.55],
+      position: [0.6, -0.062, 0.6],
       cameraPosition: [1.5, -1.1, 1.5],
       cameraTarget: [0, -0.06, 0],
       title: ['Корпус под сокет SP7', 'SP7 package'],

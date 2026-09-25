@@ -7,6 +7,7 @@ import { Scenarios, type Scenario } from '@/components/product/scenarios';
 import { SpecSection } from '@/components/product/spec-section';
 import type { routing } from '@/i18n/routing';
 import { getMotherboards, getProduct, getProducts } from '@/lib/catalog';
+import { modelSource } from '@/lib/model-source';
 
 type Locale = (typeof routing.locales)[number];
 type Params = { locale: Locale; slug: string };
@@ -121,6 +122,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/produ
           availabilityNote: product.availabilityNote,
           accentColor: product.accentColor,
           modelPreset: product.modelPreset,
+          modelSource: modelSource(product.models),
           hotspots: product.hotspots,
           highlights: product.highlights.map(({ key, label, value: v }) => ({ key, label, value: v })),
         }}

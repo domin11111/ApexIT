@@ -1,4 +1,5 @@
 import type { CatalogRecords } from '@apex/collection';
+import type { AssetRecord } from '@apex/domain';
 import { Prisma } from '../generated/prisma/client';
 import type { Db } from './prisma';
 
@@ -6,6 +7,16 @@ export type SeedStats = { platforms: number; created: number; updated: number; s
 
 /** JSON-поля записей (переводы, координаты) → вход Prisma. */
 const json = (value: unknown) => value as Prisma.InputJsonValue;
+
+type Tx = Prisma.TransactionClient;
+
+/** Ассет по ключу хранилища (путь без ведущего «/»): повторный сид обновляет запись, а не плодит новые. */
+async function upsertAsset(tx: Tx, { id: _id, meta, ...asset }: AssetRecord, sourceId: string | null): Promise<string> {
+  const storageKey = asset.url.replace(/^\//, '');
+  const data = { ...asset, meta: json(meta), sourceId };
+  const { id } = await tx.asset.upsert({ where: { storageKey }, create: { storageKey, ...data }, update: data, select: { id: true } });
+  return id;
+}
 
 /**
  * Синхронизирует БД с записями коллекции. Идемпотентен.
@@ -55,7 +66,7 @@ export async function seedCatalog(
       publishedAt: _publishedAt,
       i18n,
       heroImage: _heroImage,
-      modelAsset: _modelAsset,
+      modelAsset,
       specGroups,
       hotspots,
       compatibility,
@@ -65,10 +76,18 @@ export async function seedCatalog(
 
     await prisma.$transaction(
       async (tx) => {
+        // Модель: исходный GLB и его варианты (мобильный) — до продукта, чтобы сослаться на неё
+        let modelAssetId: string | null = null;
+        if (modelAsset) {
+          const { variants, ...source } = modelAsset;
+          modelAssetId = await upsertAsset(tx, source, null);
+          for (const variant of variants) await upsertAsset(tx, variant, modelAssetId);
+        }
+
         const { id: productId } = await tx.product.upsert({
           where: { slug },
-          create: { slug, ...data, publishedAt },
-          update: data,
+          create: { slug, ...data, modelAssetId, publishedAt },
+          update: { ...data, modelAssetId },
           select: { id: true },
         });
 

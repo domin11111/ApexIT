@@ -60,6 +60,18 @@ export const SeedCompatibility = z.object({
   notes: L10n.optional(),
 });
 
+/**
+ * GLB-модель продукта из tools/blender: файл в apps/web/public/models, облегчённый мобильный вариант
+ * лежит рядом с суффиксом -mobile (текстуры до 1024 px). Размеры — для прогресса загрузки и мониторинга.
+ */
+export const SeedModel = z.object({
+  url: z.string().regex(/^\/models\/[a-z0-9-]+\.glb$/),
+  sizeBytes: z.number().int().positive(),
+  mobileSizeBytes: z.number().int().positive(),
+  triangles: z.number().int().positive(),
+});
+export type SeedModel = z.infer<typeof SeedModel>;
+
 export const SeedProduct = z.object({
   slug: Slug,
   name: z.string(),
@@ -77,6 +89,8 @@ export const SeedProduct = z.object({
   accentColor: HexColor,
   accentColorAlt: HexColor.optional(),
   modelPreset: ModelPreset,
+  /** Готовая модель; без неё фронт рисует процедурную по modelPreset */
+  model: SeedModel.optional(),
   sortOrder: z.number().int(),
   specGroups: z.array(SeedSpecGroup).min(1),
   hotspots: z.array(SeedHotspot),

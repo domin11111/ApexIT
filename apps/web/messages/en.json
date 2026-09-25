@@ -42,8 +42,12 @@
     "explode": "Explode",
     "glow": "Glow",
     "spin": "Fans",
+    "glb": "GLB model",
     "lighting": "Lighting",
-    "nodes": "Hotspot nodes"
+    "nodes": "Hotspot nodes",
+    "board": "SP7 server board (1P, 16 DIMM)",
+    "socket": "SP7 socket with SRM",
+    "filler": "Micron RDIMM, lightweight"
   },
   "story": {
     "rail": "Presentation chapters",

@@ -20,6 +20,7 @@ export const rtxPro6000Blackwell: SeedProduct = {
   status: 'AVAILABLE',
   accentColor: accents.gpu.solid,
   modelPreset: 'GPU_DUAL_SLOT',
+  model: { url: '/models/gpu-rtx-pro-6000-se.glb', sizeBytes: 1150080, mobileSizeBytes: 583268, triangles: 10824 },
   sortOrder: 40,
 
   specGroups: [
@@ -138,8 +139,8 @@ export const rtxPro6000Blackwell: SeedProduct = {
     {
       key: 'gpu-die',
       anchorNode: 'gpu_die',
-      position: [0.05, 0.02, 0],
-      cameraPosition: [0.4, 0.4, 1.3],
+      position: [-0.017, 0.05, -0.043],
+      cameraPosition: [0.3, 0.45, 1.3],
       visibility: 'EXPLODED',
       title: ['GB202 · Tensor-ядра 5-го поколения', 'GB202 · 5th-gen Tensor Cores'],
       body: [
@@ -150,7 +151,7 @@ export const rtxPro6000Blackwell: SeedProduct = {
     {
       key: 'vram',
       anchorNode: 'vram',
-      position: [0.35, 0.18, 0],
+      position: [0.2, 0.313, -0.051],
       cameraPosition: [0.8, 0.6, 1.1],
       visibility: 'EXPLODED',
       title: ['96 ГБ GDDR7', '96 GB GDDR7'],
@@ -162,8 +163,8 @@ export const rtxPro6000Blackwell: SeedProduct = {
     {
       key: 'cooling',
       anchorNode: 'heatsink',
-      position: [0.95, 0.05, 0.02],
-      cameraPosition: [1.9, 0.35, 1.1],
+      position: [0.7, 0.415, 0.05],
+      cameraPosition: [1.7, 1.1, 0.9],
       visibility: 'ASSEMBLED',
       title: ['Пассивный радиатор', 'Passive heatsink'],
       body: [
@@ -174,7 +175,7 @@ export const rtxPro6000Blackwell: SeedProduct = {
     {
       key: 'pcie',
       anchorNode: 'pcie_edge',
-      position: [-0.2, -0.46, 0],
+      position: [-0.29, -0.37, -0.055],
       cameraPosition: [-0.1, -1.0, 1.1],
       title: ['PCIe 5.0 x16', 'PCIe 5.0 x16'],
       body: [
@@ -185,7 +186,7 @@ export const rtxPro6000Blackwell: SeedProduct = {
     {
       key: 'outputs',
       anchorNode: 'io_bracket',
-      position: [-1.0, 0.1, 0],
+      position: [-0.99, 0.1, 0],
       cameraPosition: [-2.0, 0.3, 0.6],
       title: ['4 × DisplayPort 2.1b', '4 × DisplayPort 2.1b'],
       body: [
