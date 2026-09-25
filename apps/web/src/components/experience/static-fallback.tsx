@@ -59,12 +59,12 @@ export function StaticFallback({ models }: { models: StoryModels }) {
         <div
           key={id}
           aria-hidden
-          className={`absolute left-1/2 top-[18vh] w-[min(92vw,80vh)] -translate-x-1/2 mix-blend-lighten transition-opacity duration-700 ${id === active ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute bottom-[16svh] left-1/2 w-[min(92vw,62svh)] -translate-x-1/2 mix-blend-lighten transition-opacity duration-700 ${id === active ? 'opacity-100' : 'opacity-0'}`}
         >
           <RenderImage
             render={render}
             alt=""
-            sizes="(min-width: 768px) 80vh, 92vw"
+            sizes="(min-width: 768px) 62vh, 92vw"
             priority={id === 'hero'}
             className="h-auto w-full"
           />
