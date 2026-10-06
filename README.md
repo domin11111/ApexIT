@@ -268,6 +268,57 @@ D:\BOT_SERVER\запуск компонентов.bat rebuild    :: пересо
   пути к `server.mjs` и порту, dev-серверы не трогает), `caddy-for-components` (reload работающего
   Caddy или код 2 — поднять его в окне «lenivec Caddy»), `check-components` (порт, Caddy, домен).
 
+## Тесты, CI и деплой (этап 9)
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test   # то же, что CI: юнит-тесты всех пакетов + интеграционные API
+pnpm --filter @apex/web test:e2e           # E2E: Playwright по боевой сборке (первый прогон собирает сайт)
+E2E_REBUILD=1 pnpm --filter @apex/web test:e2e   # пересобрать после правок кода
+```
+
+- **Юнит-тесты** (Vitest): движок совместимости, режиссёр сторителлинга, каталог и коллекция,
+  контракты моков, хелперы сайта, приём заявок без API (honeypot, капча, правило B3, лимит, Telegram
+  с подменённой сетью) и файловое хранилище сборок.
+- **Интеграционные тесты API** поднимают настоящие PostgreSQL и Redis через Testcontainers (нужен
+  Docker): заявка доходит до админки и в уведомления, вход с 2FA, роли, CSRF, лимиты, CSV, путь
+  3D-модели от загрузки до публикации.
+- **E2E** (Playwright, `apps/web/e2e`) идут по той же конфигурации, что и lenivec.online:
+  `deploy/server.mjs` с `basePath /app/components`, но на порту 25590, со сборкой в `.next-e2e`
+  и без секретов (`APEX_SECRETS=off`) — заявки из тестов никуда не уходят. Профили — десктоп и
+  телефон (Pixel 7). Проверяются главная (сцены, прелоадер, `/en`, без WebGL, reduced-motion, SEO),
+  продукт, сравнение, конфигуратор (несовместимое недоступно, ссылка на сборку), форма заявки,
+  доступность (axe, WCAG 2 AA) и сам сервер (400 на битый адрес, админка закрыта, заголовки кеша).
+  Локально — установленный Chrome, в CI — Chromium.
+
+**CI** — `.github/workflows/ci.yml` (GitHub Actions), на каждый push и pull request:
+
+| Задача | Что делает |
+| --- | --- |
+| Lint, typecheck, тесты | `pnpm lint`, `pnpm typecheck`, `pnpm test` (Testcontainers в Docker раннера) |
+| E2E | Playwright; отчёт — артефакт `playwright-report` |
+| Lighthouse CI | `lighthouserc.cjs`: 6 страниц, медиана трёх прогонов; доступность и SEO ≥ 95, best practices ≥ 90, CLS ≤ 0,05 — ошибка; производительность ≥ 85 — предупреждение (общий CPU раннера) |
+| Docker-образы | `apps/api/Dockerfile` (API, он же воркер и миграции) и `apps/web/Dockerfile` (Next standalone); на `main` — публикация в `ghcr.io/<владелец>/apex-api` и `apex-web` |
+| Деплой | на `main`, если заданы переменные `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` и секрет `DEPLOY_SSH_KEY`: сервер тянет образы и перезапускает стек |
+
+Публичные адрес сайта и ключ Turnstile вшиваются в образ сайта при сборке — переменные репозитория
+`SITE_URL` и `TURNSTILE_SITE_KEY` (Settings → Secrets and variables → Actions → Variables).
+
+**Деплой полного стека на свой сервер/VPS** — `docker-compose.prod.yml`: Caddy с автоматическим
+HTTPS, сайт, API, воркер, разовая задача миграций и сида, PostgreSQL, Redis, S3 (RustFS).
+
+```bash
+cp deploy/docker/env.example .env.production        # домены сайта и S3, секреты
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+docker compose -f docker-compose.prod.yml --env-file .env.production run --rm api \
+  node dist/admin-create.mjs --email you@company.com --role ADMIN
+```
+
+Caddy (`deploy/docker/Caddyfile`) отдаёт `/api/v1`, `/api/admin` и `/docs` в API, остальное — в
+Next; S3 живёт на своём поддомене — presigned-ссылки для загрузки моделей подписаны на хост.
+Без заполненных секретов compose не стартует и называет недостающую переменную.
+
+**Витрина на lenivec.online** — по-прежнему без Docker и API, см. раздел «Боевая копия» выше.
+
 ## 3D-модели в Blender
 
 Детали сервера собираются кодом в `tools/blender`: геометрия в реальных размерах, PBR-материалы,

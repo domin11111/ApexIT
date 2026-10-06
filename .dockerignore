@@ -1,0 +1,28 @@
+# Контекст сборки образов — корень монорепо (apps/api/Dockerfile, apps/web/Dockerfile).
+# Зависимости и сборки ставятся внутри образа заново: локальные node_modules собраны под Windows.
+**/node_modules
+**/.next
+**/.next-*
+**/dist
+**/.turbo
+**/coverage
+**/test-results
+**/playwright-report
+.git
+.lighthouse
+.claude
+
+# Секреты и данные боевой копии — в образ никогда
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+deploy/components.env
+deploy/data
+apps/web/.data
+
+# Blender: окружение и промежуточные файлы сборки моделей (готовые GLB лежат в apps/web/public)
+tools/blender/.deps
+tools/blender/.build

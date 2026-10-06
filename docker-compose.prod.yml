@@ -1,0 +1,147 @@
+# Полный стек на своём сервере или VPS: сайт, API, воркер моделей, PostgreSQL, Redis, S3 и Caddy
+# с автоматическим HTTPS. Образы собирает CI (GitHub Actions → ghcr.io), сервер их только тянет.
+#
+#   cp deploy/docker/env.example .env.production      # заполнить домены и секреты
+#   docker compose -f docker-compose.prod.yml --env-file .env.production pull
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# Первый запуск: migrate накатывает миграции и заливает коллекцию, после чего стартуют API и воркер.
+# Администратора создаёт человек (пароль вводится скрыто):
+#   docker compose -f docker-compose.prod.yml --env-file .env.production run --rm api #     node dist/admin-create.mjs --email you@company.com --role ADMIN
+#
+# Витрина на lenivec.online устроена иначе — без API и Docker, см. deploy/ и README.
+name: apex-prod
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-apex}:${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-apex}
+  REDIS_URL: redis://redis:6379
+  # Браузер загружает модели в S3 по presigned-ссылкам: адрес хранилища должен быть публичным
+  S3_ENDPOINT: https://${S3_DOMAIN:?задайте S3_DOMAIN}
+  S3_BUCKET: apex-assets
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:-apex}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?задайте S3_SECRET_KEY}
+  S3_AUTO_SETUP: 'true'
+  ASSET_PUBLIC_URL: https://${S3_DOMAIN}/apex-assets
+  API_PUBLIC_URL: https://${SITE_DOMAIN:?задайте SITE_DOMAIN}
+  WEB_ORIGIN: https://${SITE_DOMAIN}
+  WEB_URL: https://${SITE_DOMAIN}
+  # За Caddy: IP посетителя — из X-Forwarded-For (лимиты заявок и входа)
+  TRUST_PROXY: 'true'
+  TURNSTILE_SECRET: ${TURNSTILE_SECRET:?задайте TURNSTILE_SECRET}
+  LEAD_IP_SALT: ${LEAD_IP_SALT:?задайте LEAD_IP_SALT}
+  SMTP_URL: ${SMTP_URL:-}
+  MAIL_FROM: ${MAIL_FROM:-APEX Compute <no-reply@example.com>}
+  LEAD_NOTIFY_EMAILS: ${LEAD_NOTIFY_EMAILS:-}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+  TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?задайте TOTP_ENCRYPTION_KEY}
+  REVALIDATE_SECRET: ${REVALIDATE_SECRET:?задайте REVALIDATE_SECRET}
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+      S3_DOMAIN: ${S3_DOMAIN}
+    volumes:
+      - ./deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/domin11111/apex-web:latest}
+    restart: unless-stopped
+    environment:
+      # Страницы собраны из встроенного каталога, дальше ISR освежает их из API
+      API_URL: http://api:4000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/domin11111/apex-api:latest}
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+
+  worker:
+    image: ${API_IMAGE:-ghcr.io/domin11111/apex-api:latest}
+    restart: unless-stopped
+    command: ['node', 'dist/worker.mjs']
+    environment: *api-env
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Разовая задача при каждом `up`: миграции, затем коллекция (существующие продукты не перезаписывает)
+  migrate:
+    image: ${API_IMAGE:-ghcr.io/domin11111/apex-api:latest}
+    restart: 'no'
+    command: ['sh', '-c', 'prisma migrate deploy && node dist/seed.mjs']
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-apex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-apex}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  s3:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-apex}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - s3data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:9000/health || wget -qO- http://localhost:9000/health']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:
+  caddy_data:
+  caddy_config:

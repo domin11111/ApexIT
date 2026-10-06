@@ -13,10 +13,15 @@ export function localizedPath(locale: Locale, path: string): string {
 
 export const absoluteUrl = (path: string) => `${SITE_URL}${path === '/' ? '' : path}` || SITE_URL;
 
-/** canonical + hreflang для страницы, одинаковой в обеих локалях. */
+/**
+ * canonical + hreflang для страницы, одинаковой в обеих локалях. Адреса абсолютные: относительный
+ * '/' Next склеил бы с metadataBase под префиксом в …/app/components/ — адрес со слэшем, который
+ * сам же уводит редиректом на главную без слэша.
+ */
 export function alternatesFor(locale: Locale, path: string) {
+  const url = (lang: Locale) => absoluteUrl(localizedPath(lang, path));
   return {
-    canonical: localizedPath(locale, path),
-    languages: { ru: localizedPath('ru', path), en: localizedPath('en', path), 'x-default': localizedPath('ru', path) },
+    canonical: url(locale),
+    languages: { ru: url('ru'), en: url('en'), 'x-default': url('ru') },
   };
 }

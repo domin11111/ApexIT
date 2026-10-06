@@ -1,0 +1,28 @@
+# Caddy полного стека (docker-compose.prod.yml). Сертификаты Let's Encrypt Caddy получает сам —
+# домены должны смотреть на сервер, порты 80 и 443 открыты.
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Публичное API, админское API и документация — в API. Всё остальное, в том числе
+	# /api/revalidate (вебхук ISR, который API зовёт после правок каталога), — в Next.
+	@api path /api/v1/* /api/admin/* /docs /docs/*
+	handle @api {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+# S3 на своём поддомене: presigned-ссылки подписаны на хост и путь, префикс к ним не приставить.
+{$S3_DOMAIN} {
+	reverse_proxy s3:9000
+}

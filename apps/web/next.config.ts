@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   basePath,
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Docker-образ (apps/web/Dockerfile): сервер и только нужные ему зависимости
+  output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   // Префикс нужен и в браузере: fetch, srcset и загрузчик GLB его сами не добавляют (lib/base-path.ts)
   env: { NEXT_PUBLIC_BASE_PATH: basePath ?? '' },
   // Внутренние пакеты отдают TypeScript-исходники — Next их транспилирует

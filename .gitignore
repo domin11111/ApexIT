@@ -3,6 +3,9 @@ node_modules/
 dist/
 .next/
 .next-deploy/
+.next-e2e/
+playwright-report/
+test-results/
 out/
 coverage/
 .turbo/
@@ -32,8 +35,9 @@ tools/blender/.deps/
 tools/blender/.build/
 __pycache__/
 
-# Отчёты Lighthouse (scripts/lighthouse.mjs)
+# Отчёты Lighthouse (scripts/lighthouse.mjs, Lighthouse CI)
 .lighthouse/
+.lighthouseci/
 
 # Боевая копия на lenivec.online (deploy/): ключи и данные сайта — сборки, журнал заявок
 deploy/components.env
