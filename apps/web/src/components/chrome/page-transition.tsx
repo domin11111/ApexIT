@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
+import { BASE_PATH, stripBasePath } from '@/lib/base-path';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { useLenis } from '@/providers/smooth-scroll';
 import { useExperience } from '@/stores/experience';
@@ -30,6 +31,8 @@ function transitionTarget(event: MouseEvent): HTMLAnchorElement | null {
   const url = new URL(anchor.href);
   // Смена только query или якоря — не переход между страницами
   if (url.origin !== location.origin || url.pathname === location.pathname) return null;
+  // На общем домене соседние приложения — тот же origin, но не наши страницы: туда обычным переходом
+  if (BASE_PATH && url.pathname !== BASE_PATH && !url.pathname.startsWith(`${BASE_PATH}/`)) return null;
   return anchor;
 }
 
@@ -85,7 +88,8 @@ export function PageTransition() {
       event.preventDefault();
       if (useCurtain.getState().from !== null || !root.current) return;
 
-      const href = anchor.getAttribute('href') ?? anchor.href;
+      // В href уже есть basePath, а router.push добавит его ещё раз — снимаем
+      const href = stripBasePath(anchor.getAttribute('href') ?? anchor.href);
       useCurtain.setState({ from: location.pathname, label: anchor.dataset.transitionLabel ?? null });
       lenis?.stop();
       gsap.fromTo(

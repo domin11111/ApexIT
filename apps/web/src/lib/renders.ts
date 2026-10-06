@@ -1,4 +1,5 @@
 import manifest from '../../public/renders/renders.json';
+import { withBasePath } from './base-path';
 
 /*
  * Статичные рендеры моделей из Blender (scripts/renders.mjs → public/renders).
@@ -24,6 +25,7 @@ export function renderFor(key: string, view: RenderView = 'hero'): Render | null
   const id = `${key}-${view}`;
   const size = sizes[id];
   if (!size) return null;
-  const set = (ext: string) => `/renders/${id}-800.${ext} 800w, /renders/${id}-1600.${ext} 1600w`;
-  return { ...size, avif: set('avif'), webp: set('webp'), src: `/renders/${id}-1600.webp` };
+  const file = (width: number, ext: string) => withBasePath(`/renders/${id}-${width}.${ext}`);
+  const set = (ext: string) => `${file(800, ext)} 800w, ${file(1600, ext)} 1600w`;
+  return { ...size, avif: set('avif'), webp: set('webp'), src: file(1600, 'webp') };
 }

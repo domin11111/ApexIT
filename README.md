@@ -243,6 +243,31 @@ LCP в мобильном профиле — оценка симулятора (
 отрисовки, и симулятор относит к критическому пути шрифты и чанки фреймворка (~400 КБ). Фактически
 LCP-элемент (текст hero или постер) рисуется вместе с первым кадром — через ~0,2 с.
 
+## Боевая копия: https://lenivec.online/app/components/
+
+Третий сайт на общем домене (рядом с ленивцем и скринером flomu): Cloudflare → Caddy на 443
+(`D:\BOT_SERVER\lenivec\deploy\Caddyfile`, блок `@components`) → `127.0.0.1:25580`.
+
+```bat
+D:\BOT_SERVER\запуск компонентов.bat            :: перезапустить сайт (соберёт, если сборки нет)
+D:\BOT_SERVER\запуск компонентов.bat rebuild    :: пересобрать после правок кода
+```
+
+- **Один процесс, без API и Docker.** `deploy/server.mjs` — Next в режиме production с
+  `basePath /app/components` и сборкой в `apps/web/.next-deploy` (`deploy/build.mjs`; локальные
+  `next build` её не трогают). Каталог встроенный; заявки и сохранённые сборки принимают маршруты
+  самого Next (`app/api/v1`): заявка пишется в `deploy/data/leads.jsonl` и уходит в Telegram,
+  сборки — в `deploy/data/configurations.json`. Админка наружу не выставляется (404).
+- **Префикс.** Ссылки и роутер Next добавляют его сами; fetch, `srcset` и адреса GLB идут через
+  `lib/base-path.ts`. В разработке префикса нет — сайт работает в корне localhost.
+- **Секреты** — из корневого `.env` (Telegram, Turnstile); `deploy/components.env` (вне git)
+  их переопределяет — например, боевые ключи Turnstile для домена.
+- **Устойчивость.** Адрес с битым %-кодированием получает 400 до Next; ошибки обработчиков пишутся
+  в окно «components Site», процесс живёт. HTML отдаётся с `no-cache`, ответы API — `no-store`.
+- **Скрипты** `deploy/*.ps1` повторяют устройство скринера: `stop-components` (свой процесс — по
+  пути к `server.mjs` и порту, dev-серверы не трогает), `caddy-for-components` (reload работающего
+  Caddy или код 2 — поднять его в окне «lenivec Caddy»), `check-components` (порт, Caddy, домен).
+
 ## 3D-модели в Blender
 
 Детали сервера собираются кодом в `tools/blender`: геометрия в реальных размерах, PBR-материалы,

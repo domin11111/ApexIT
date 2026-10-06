@@ -24,7 +24,8 @@ const API_URL = process.env.API_URL?.replace(/\/$/, '');
 const REVALIDATE_SECONDS = 300;
 
 let localCatalog: CatalogService | undefined;
-const mockCatalog = () => (localCatalog ??= createCatalogService(createMemorySource(buildCatalogRecords())));
+/** Каталог на встроенных данных коллекции — его же используют маршруты app/api/v1 сайта без API. */
+export const mockCatalog = () => (localCatalog ??= createCatalogService(createMemorySource(buildCatalogRecords())));
 
 async function fromApi<T>(path: string, parse: (body: unknown) => T): Promise<T> {
   const response = await fetch(`${API_URL}/api/v1${path}`, {

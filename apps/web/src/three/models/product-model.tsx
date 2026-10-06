@@ -6,6 +6,7 @@ import { useFrame, useThree, type ThreeElements } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
 import type { Object3D, WebGLRenderer } from 'three';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { withBasePath } from '@/lib/base-path';
 import { prepareGlb, type ModelManifest } from './glb';
 import { buildProceduralModel, type ModelIdentity } from './procedural';
 import { applyRig, collectRig, disposeModel, type RigControls } from './rig';
@@ -75,7 +76,7 @@ const ktx2Loaders = new WeakMap<WebGLRenderer, KTX2Loader>();
 function ktx2For(gl: WebGLRenderer): KTX2Loader {
   let loader = ktx2Loaders.get(gl);
   if (!loader) {
-    loader = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(gl);
+    loader = new KTX2Loader().setTranscoderPath(withBasePath('/basis/')).detectSupport(gl);
     ktx2Loaders.set(gl, loader);
   }
   return loader;
@@ -87,7 +88,7 @@ function ktx2For(gl: WebGLRenderer): KTX2Loader {
  */
 export function useGlbScene(url: string): Object3D {
   const gl = useThree((state) => state.gl);
-  const { scene } = useGLTF(url, true, true, (loader) => {
+  const { scene } = useGLTF(withBasePath(url), true, true, (loader) => {
     // GLTFLoader drei типизирован по three-stdlib; KTX2Loader из three совместим по интерфейсу
     loader.setKTX2Loader(ktx2For(gl) as unknown as Parameters<typeof loader.setKTX2Loader>[0]);
   });

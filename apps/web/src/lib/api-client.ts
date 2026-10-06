@@ -1,13 +1,16 @@
 import type { ApiError } from '@apex/contracts';
+import { BASE_PATH } from '@/lib/base-path';
 import { whenMockingReady } from '@/providers/app-providers';
 
 /*
- * Запросы к API из браузера. Без NEXT_PUBLIC_API_URL — тот же origin, где их перехватывают
- * MSW-моки (они построены на том же сервисе, что и API). Ответы не парсятся Zod-схемами:
- * контракт проверяет сервер, а схемы в клиентском бандле стоили бы лишних килобайт.
+ * Запросы к API из браузера. Без NEXT_PUBLIC_API_URL — тот же сайт: в разработке их перехватывают
+ * MSW-моки (они построены на том же сервисе, что и API), в боевой сборке без API отвечают
+ * маршруты самого Next (app/api/v1). Путь — с префиксом сайта: на общем домене /api/… ушёл бы
+ * в соседнее приложение. Ответы не парсятся Zod-схемами: контракт проверяет сервер,
+ * а схемы в клиентском бандле стоили бы лишних килобайт.
  */
 
-const BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
+const BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || BASE_PATH;
 
 export class ApiRequestError extends Error {
   constructor(

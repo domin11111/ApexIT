@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { MathUtils, Mesh, type Group, type Material, type ShaderMaterial } from 'three';
+import { withBasePath } from '@/lib/base-path';
 import { BOARD_DISPLAY, BOARD_LAYOUT, BOARD_TOP, BOARD_YAW, FILLER_ORDER, ASSEMBLY } from '@/story/assembly';
 import { BOARD_Y, type StoryPose } from '@/story/director';
 import { RDIMM_FILLER_URL } from '../models/fillers';
@@ -80,8 +81,8 @@ function boardTraces(): TracePath[] {
  */
 export function AssemblyBoard({ accent, getPose }: { accent: string; getPose: () => StoryPose | null }) {
   const { gl, camera, scene } = useThree();
-  const { scene: boardScene } = useGLTF(useModelUrl(BOARD), true, true);
-  const { scene: fillerScene } = useGLTF(FILLER_URL, true, true);
+  const { scene: boardScene } = useGLTF(withBasePath(useModelUrl(BOARD)), true, true);
+  const { scene: fillerScene } = useGLTF(withBasePath(FILLER_URL), true, true);
   const holder = useRef<Group>(null);
   const fading = useRef(false);
 

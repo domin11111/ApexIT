@@ -1,11 +1,12 @@
 import type { ApiError } from '@apex/contracts';
+import { BASE_PATH } from '@/lib/base-path';
 
 /*
  * Клиент закрытого API админки. Сессия — httpOnly cookie API (её не видно JS),
  * поэтому все запросы идут с credentials: 'include' и заголовком x-apex-admin против CSRF.
  */
 
-const BASE = `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? ''}/api/admin`;
+const BASE = `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || BASE_PATH}/api/admin`;
 
 export class AdminApiError extends Error {
   constructor(

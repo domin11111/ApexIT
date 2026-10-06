@@ -2,6 +2,7 @@ node_modules/
 .pnpm-store/
 dist/
 .next/
+.next-deploy/
 out/
 coverage/
 .turbo/
@@ -33,3 +34,8 @@ __pycache__/
 
 # Отчёты Lighthouse (scripts/lighthouse.mjs)
 .lighthouse/
+
+# Боевая копия на lenivec.online (deploy/): ключи и данные сайта — сборки, журнал заявок
+deploy/components.env
+deploy/data/
+apps/web/.data/

@@ -5,6 +5,7 @@ import { routing } from './i18n/routing';
 export default createMiddleware(routing);
 
 export const config = {
-  // Всё, кроме API, админки (она без локалей), служебных путей Next и файлов с расширением
-  matcher: '/((?!api|admin|_next|_vercel|.*\\..*).*)',
+  // Всё, кроме API, админки (она без локалей), служебных путей Next и файлов с расширением.
+  // '/' отдельно: с basePath (/app/components) общий шаблон не совпадает с корнем без слэша
+  matcher: ['/', '/((?!api|admin|_next|_vercel|.*\\..*).*)'],
 };

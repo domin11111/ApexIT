@@ -6,7 +6,7 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   // public/basis — транскодер Basis из three (копия, не наш код)
-  globalIgnores(['.next/**', 'out/**', 'next-env.d.ts', 'public/mockServiceWorker.js', 'public/basis/**']),
+  globalIgnores(['.next/**', '.next-deploy/**', 'out/**', 'next-env.d.ts', 'public/mockServiceWorker.js', 'public/basis/**']),
   {
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
