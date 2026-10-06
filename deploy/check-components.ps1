@@ -18,16 +18,29 @@ param(
 # Windows PowerShell 5.1 по умолчанию может предложить серверу устаревший TLS.
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
+# Редиректы проходим сами. Главная сайта — /app/components, а адрес со
+# слэшем Next уводит туда кодом 308, которого Windows PowerShell 5.1
+# (.NET Framework) редиректом не считает и отдаёт как ошибку.
 function Get-Status {
     param([string]$Uri)
-    try {
-        $r = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 20
-        return @{ Code = [int]$r.StatusCode; Body = $r.Content }
-    } catch {
+    for ($hop = 0; $hop -le 3; $hop++) {
         $code = $null
-        if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-        return @{ Code = $code; Body = '' }
+        $location = $null
+        try {
+            $r = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 20 -MaximumRedirection 0 -ErrorAction Stop
+            $code = [int]$r.StatusCode
+            if ($code -lt 300 -or $code -ge 400) { return @{ Code = $code; Body = $r.Content } }
+            $location = $r.Headers['Location']
+        } catch {
+            $resp = $_.Exception.Response
+            if (-not $resp) { return @{ Code = $null; Body = '' } }
+            $code = [int]$resp.StatusCode
+            $location = $resp.Headers['Location']
+        }
+        if ($code -lt 300 -or $code -ge 400 -or -not $location) { return @{ Code = $code; Body = '' } }
+        $Uri = ([Uri]::new([Uri]$Uri, [string]$location)).AbsoluteUri
     }
+    return @{ Code = $code; Body = '' }
 }
 
 # 1. Сам сайт, мимо Caddy.
