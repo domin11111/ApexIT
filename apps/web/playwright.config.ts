@@ -38,11 +38,25 @@ export default defineConfig({
   },
   projects: [
     // В CI — Chromium из `playwright install`, локально — установленный Chrome (браузеры не качаем)
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], ...(CI ? {} : { channel: 'chrome' }) } },
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'], ...(CI ? {} : { channel: 'chrome' }) },
+      testIgnore: /software-gl\.spec\.ts/,
+    },
     {
       name: 'mobile',
       use: { ...devices['Pixel 7'], ...(CI ? {} : { channel: 'chrome' }) },
       testMatch: /(home|product|request)\.spec\.ts/,
+    },
+    {
+      // Без видеокарты: WebGL через SwiftShader — сайт должен уйти на статичные рендеры
+      name: 'software-gl',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(CI ? {} : { channel: 'chrome' }),
+        launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+      },
+      testMatch: /software-gl\.spec\.ts/,
     },
   ],
   webServer: {
