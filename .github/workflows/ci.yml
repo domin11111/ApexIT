@@ -96,6 +96,8 @@ jobs:
         with:
           name: lighthouse
           path: .lighthouseci
+          # Папка с точкой — upload-artifact по умолчанию скрытые файлы пропускает
+          include-hidden-files: true
           retention-days: 14
 
   docker:
